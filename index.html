@@ -134,9 +134,9 @@
                             <div class="flex flex-col gap-1">
                                 <label for="select-ai-count" class="text-xs text-amber-900 font-bold">AI參賽人數</label>
                                 <select id="select-ai-count" class="bg-white text-slate-700 font-bold p-2 rounded-xl border border-amber-300 outline-none focus:border-emerald-500 cursor-pointer shadow-sm">
-                                    <option value="1" selected>1 名</option>
+                                    <option value="0" selected>0 名</option>
+                                    <option value="1">1 名</option>
                                     <option value="2">2 名</option>
-                                    <option value="3">3 名</option>
                                 </select>
                             </div>
                         </div>
@@ -152,7 +152,7 @@
             </div>
         </div>
 
-        <!-- 手機端 - 玩家控制器 (傾斜手機控制移動) -->
+        <!-- 手機端 - 玩家控制器 (前後左右傾斜手機控制移動) -->
         <div id="view-player-mobile" class="hidden fixed inset-0 z-50 bg-gradient-to-b from-sky-100 via-amber-50 to-emerald-100 p-4 flex-col justify-between overflow-hidden">
             <div id="mobile-top-bar" class="text-center space-y-1 flex-shrink-0 pt-2">
                 <span class="text-4xl">🌸</span>
@@ -171,23 +171,27 @@
                 </button>
             </div>
 
-            <!-- 控制器 - 手機感應傾斜控制 -->
-            <div id="mobile-controls" class="hidden flex-col items-center justify-center gap-4 w-full my-auto bg-white/80 border-2 border-emerald-300 rounded-3xl p-6 shadow-xl backdrop-blur-md">
-                <div class="text-emerald-900 font-black text-xl text-center flex items-center gap-2">
-                    <i class="fa-solid fa-mobile-screen-button animate-pulse text-2xl"></i>
-                    左右傾斜手機控制移動
+            <!-- 控制器 - 手機感應傾斜控制 (全方向 2D 指示器) -->
+            <div id="mobile-controls" class="hidden flex-col items-center justify-center gap-3 w-full my-auto bg-white/80 border-2 border-emerald-300 rounded-3xl p-5 shadow-xl backdrop-blur-md">
+                <div class="text-emerald-900 font-black text-lg text-center flex items-center gap-2">
+                    <i class="fa-solid fa-mobile-screen-button animate-pulse text-xl"></i>
+                    前後左右傾斜手機控制移動
                 </div>
                 
-                <!-- 傾斜指示計量條 -->
-                <div class="w-full bg-slate-200 h-6 rounded-full overflow-hidden border border-slate-300 relative my-2">
-                    <div id="tilt-indicator" class="w-6 h-full bg-emerald-500 rounded-full transition-all duration-75 absolute top-0 left-1/2 -translate-x-1/2"></div>
+                <!-- 全方向 2D 指示面板 -->
+                <div class="w-40 h-40 bg-slate-100 rounded-2xl border-2 border-slate-300 relative my-1 overflow-hidden shadow-inner flex items-center justify-center">
+                    <!-- 十字輔助線 -->
+                    <div class="absolute w-full h-0.5 bg-slate-200"></div>
+                    <div class="absolute h-full w-0.5 bg-slate-200"></div>
+                    <!-- 動態搖桿原點標記 -->
+                    <div id="tilt-indicator-2d" class="w-7 h-7 bg-emerald-500 rounded-full transition-all duration-75 absolute shadow-md border-2 border-white" style="top: 50%; left: 50%; transform: translate(-50%, -50%);"></div>
                 </div>
 
-                <div class="text-slate-600 font-bold text-sm text-center">
-                    目前傾斜角度：<span id="tilt-angle-text" class="text-emerald-700 font-black text-lg">0°</span>
+                <div class="text-slate-600 font-bold text-xs text-center">
+                    傾斜角度 (X, Y)：<span id="tilt-angle-text" class="text-emerald-700 font-black text-base">0°, 0°</span>
                 </div>
 
-                <button id="btn-recalibrate" class="mt-2 px-6 py-2.5 bg-amber-400 active:bg-amber-500 text-amber-950 font-bold rounded-xl shadow border border-white text-sm">
+                <button id="btn-recalibrate" class="mt-1 px-5 py-2 bg-amber-400 active:bg-amber-500 text-amber-950 font-bold rounded-xl shadow border border-white text-xs">
                     🔄 重置中心零點
                 </button>
             </div>
@@ -350,8 +354,9 @@
         let myPlayerId = null;
         let myAvatar = '🐱';
 
-        // 體感傾斜控制變數
-        let zeroGamma = 0; // 零點基準角
+        // 體感傾斜控制變數 (前後左右)
+        let zeroGamma = 0; // 左右零點基準角
+        let zeroBeta = 0;  // 前後零點基準角
         let isOrientationBound = false;
 
         // 遊戲運行設定參數
@@ -403,8 +408,9 @@
                         } else if (data.type === 'TILT') {
                             const p = players.find(player => player.id === data.playerId);
                             if (p) {
-                                // 根據傾斜量更新歸一化位置 (x: 0.05 ~ 0.95)
-                                p.x = Math.max(0.05, Math.min(0.95, p.x + data.deltaX));
+                                // 根據傾斜量更新歸一化 2D 位置
+                                p.x = Math.max(0.05, Math.min(0.95, p.x + (data.deltaX || 0)));
+                                p.y = Math.max(0.20, Math.min(0.90, p.y + (data.deltaY || 0)));
                             }
                         }
                     });
@@ -434,7 +440,7 @@
                         avatarEl.innerText = myAvatar;
                         avatarEl.classList.remove('hidden');
                     } else if (data.type === 'GAME_START') {
-                        document.getElementById('mobile-status-text').innerText = '🎮 遊戲開始，傾斜手機接取物資！';
+                        document.getElementById('mobile-status-text').innerText = '🎮 遊戲開始，前後左右傾斜手機接取物資！';
                         document.getElementById('mobile-controls').classList.remove('hidden');
                         document.getElementById('mobile-controls').classList.add('flex');
                         startOrientationListener();
@@ -446,33 +452,47 @@
 
             document.getElementById('btn-recalibrate').addEventListener('click', () => {
                 zeroGamma = currentGamma;
+                zeroBeta = currentBeta;
             });
         }
 
         let currentGamma = 0;
+        let currentBeta = 0;
 
         function startOrientationListener() {
             if (isOrientationBound) return;
 
             const handleOrientation = (e) => {
                 let gamma = e.gamma || 0; // 左右傾斜角 -90 ~ 90
+                let beta = e.beta || 0;   // 前後傾斜角 -180 ~ 180
+
                 currentGamma = gamma;
+                currentBeta = beta;
 
                 const relativeGamma = Math.max(-30, Math.min(30, gamma - zeroGamma));
+                const relativeBeta = Math.max(-30, Math.min(30, beta - zeroBeta));
                 
-                // UI 顯示回饋
-                const indicator = document.getElementById('tilt-indicator');
+                // UI 顯示 2D 搖桿回饋
+                const indicator2d = document.getElementById('tilt-indicator-2d');
                 const angleText = document.getElementById('tilt-angle-text');
-                if (indicator && angleText) {
-                    const percent = 50 + (relativeGamma / 30) * 40;
-                    indicator.style.left = `${percent}%`;
-                    angleText.innerText = `${Math.round(relativeGamma)}°`;
+                if (indicator2d && angleText) {
+                    const percentX = 50 + (relativeGamma / 30) * 40;
+                    const percentY = 50 + (relativeBeta / 30) * 40;
+                    indicator2d.style.left = `${percentX}%`;
+                    indicator2d.style.top = `${percentY}%`;
+                    angleText.innerText = `${Math.round(relativeGamma)}°, ${Math.round(relativeBeta)}°`;
                 }
 
-                // 傳送移動偏移增量至大螢幕
-                if (hostConn && hostConn.open && Math.abs(relativeGamma) > 2) {
+                // 傳送 X 與 Y 上下左右移動偏移增量至大螢幕
+                if (hostConn && hostConn.open && (Math.abs(relativeGamma) > 2 || Math.abs(relativeBeta) > 2)) {
                     const deltaX = (relativeGamma / 30) * 0.025;
-                    hostConn.send({ type: 'TILT', playerId: myPlayerId, deltaX: deltaX });
+                    const deltaY = (relativeBeta / 30) * 0.025;
+                    hostConn.send({ 
+                        type: 'TILT', 
+                        playerId: myPlayerId, 
+                        deltaX: deltaX,
+                        deltaY: deltaY 
+                    });
                 }
             };
 
@@ -555,7 +575,8 @@
                 conn: conn,
                 isAI: false,
                 score: 0,
-                x: 0.1 + Math.random() * 0.8 // 歸一化橫向座標 (0.05 - 0.95)
+                x: 0.1 + Math.random() * 0.8, // 歸一化 X 座標 (0.05 - 0.95)
+                y: 0.88                       // 歸一化 Y 座標 (0.20 - 0.90)
             };
             players.push(p);
 
@@ -579,7 +600,7 @@
             foodDropSpeed = parseFloat(document.getElementById('select-drop-speed').value);
             const aiToAddCount = parseInt(document.getElementById('select-ai-count').value, 10);
 
-            const aiNames = ['🤖 智慧小安', '🤖 助人小傑', '🤖 快樂小熊'];
+            const aiNames = ['🤖 智慧小安', '🤖 助人小傑'];
 
             for (let i = 0; i < aiToAddCount; i++) {
                 const aiAvatar = getRandomAvatar();
@@ -591,7 +612,8 @@
                     conn: null,
                     isAI: true,
                     score: 0,
-                    x: 0.2 + (i * 0.3)
+                    x: 0.3 + (i * 0.4),
+                    y: 0.88
                 });
             }
 
@@ -682,14 +704,15 @@
 
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // 更新 AI 位置
+            // 更新 AI 位置 (上下左右全方向追踪)
             players.filter(p => p.isAI).forEach(ai => {
-                // 找出距離最近的加分物資
                 const goodFoods = activeFoods.filter(f => f.score > 0);
                 if (goodFoods.length > 0) {
                     const target = goodFoods[0];
                     if (ai.x < target.x) ai.x += 0.003;
                     if (ai.x > target.x) ai.x -= 0.003;
+                    if (ai.y < target.y) ai.y += 0.003;
+                    if (ai.y > target.y) ai.y -= 0.003;
                 }
             });
 
@@ -701,26 +724,29 @@
                 const drawX = food.x * canvas.width;
                 const drawY = food.y * canvas.height;
 
-                // 繪製食物圖示與名稱
-                ctx.font = '36px sans-serif';
+                // 繪製食物圖示與名稱 (圖案已放大約 20%，由 36px 調整為 43px)
+                ctx.font = '43px sans-serif';
                 ctx.textAlign = 'center';
                 ctx.fillText(food.icon, drawX, drawY);
 
                 ctx.font = 'bold 14px "Noto Sans TC"';
                 ctx.fillStyle = food.score > 0 ? '#15803d' : '#e11d48';
-                ctx.fillText(food.name, drawX, drawY + 20);
+                ctx.fillText(food.name, drawX, drawY + 24);
 
-                // 檢測是否碰撞玩家（角色置於畫布底部 10% 處）
-                const playerY = canvas.height * 0.88;
-                if (Math.abs(drawY - playerY) < 40) {
-                    players.forEach(p => {
-                        const playerX = p.x * canvas.width;
-                        if (Math.abs(drawX - playerX) < 40) {
-                            p.score += food.score;
-                            activeFoods.splice(i, 1);
-                        }
-                    });
-                } else if (food.y > 1.05) {
+                // 檢測是否碰撞玩家 (全方向 2D 空間距離判定)
+                players.forEach(p => {
+                    const playerX = p.x * canvas.width;
+                    const playerY = p.y * canvas.height;
+                    const distX = Math.abs(drawX - playerX);
+                    const distY = Math.abs(drawY - playerY);
+
+                    if (distX < 45 && distY < 45) {
+                        p.score += food.score;
+                        activeFoods.splice(i, 1);
+                    }
+                });
+
+                if (activeFoods[i] && food.y > 1.05) {
                     activeFoods.splice(i, 1);
                 }
             }
@@ -728,7 +754,7 @@
             // 繪製玩家角色
             players.forEach(p => {
                 const px = p.x * canvas.width;
-                const py = canvas.height * 0.88;
+                const py = p.y * canvas.height;
 
                 // 角色圖示
                 ctx.font = '52px sans-serif';
