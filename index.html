@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="zh-TW" class="dark">
+<html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>安得烈食物銀行 - 即時秒數默數大挑戰</title>
+    <title>安得烈食物銀行 - 食物接接樂春日大亂鬥</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- PeerJS & QRCode.js -->
@@ -16,35 +16,18 @@
 
     <script>
         tailwind.config = {
-            darkMode: 'class',
             theme: {
                 extend: {
                     colors: {
-                        pinky: {
-                            50: '#fff1f2',
-                            100: '#ffe4e6',
-                            200: '#fecdd3',
-                            300: '#fda4af',
-                            400: '#fb7185',
-                            500: '#f43f5e',
-                            600: '#e11d48',
-                            700: '#be123c',
-                            800: '#9f1239',
-                            900: '#881337',
-                            light: '#ffb3c1',
-                            main: '#ff85a2',
-                            dark: '#ff4d6d'
+                        spring: {
+                            green: '#84cc16',
+                            lightGreen: '#f7fee7',
+                            pink: '#f43f5e',
+                            lightPink: '#fdf2f8',
+                            yellow: '#f59e0b',
+                            sky: '#06b6d4',
+                            warmBg: '#fefce8'
                         }
-                    },
-                    keyframes: {
-                        pop: {
-                            '0%': { transform: 'scale(1)' },
-                            '50%': { transform: 'scale(1.2)' },
-                            '100%': { transform: 'scale(1)' },
-                        }
-                    },
-                    animation: {
-                        pop: 'pop 0.4s ease-in-out',
                     }
                 }
             }
@@ -54,8 +37,8 @@
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap');
         body {
             font-family: 'Noto Sans TC', sans-serif;
-            background-color: #fff0f3;
-            color: #5c3d46;
+            background: linear-gradient(135deg, #e0f2fe 0%, #fef3c7 50%, #fce7f3 100%);
+            color: #1e293b;
             user-select: none;
             overflow: hidden;
         }
@@ -73,23 +56,28 @@
         #qrcode canvas, #qrcode img {
             margin: 0 auto;
             display: block;
-            width: 480px !important;
-            height: 480px !important;
+            max-width: 100%;
+            height: auto;
         }
     </style>
 </head>
-<body class="h-screen w-screen flex flex-col justify-between overflow-hidden bg-gradient-to-br from-rose-50 via-pink-100 to-rose-100 text-rose-900">
+<body class="h-screen w-screen flex flex-col justify-between overflow-hidden">
+
+    <!-- 背景音樂：心花開 (台語歌) -->
+    <audio id="bgm" loop preload="auto" src="https://ia801503.us.archive.org/15/items/xin-hua-kai/%E5%BF%83%E8%8A%B1%E9%96%8B.mp3"></audio>
 
     <!-- 頂部 Header -->
-    <header id="main-header" class="w-full px-6 py-3 border-b border-rose-200 bg-white/70 backdrop-blur-md flex justify-between items-center z-10 flex-shrink-0 shadow-sm">
+    <header id="main-header" class="w-full px-6 py-3 border-b border-amber-200/60 bg-white/70 backdrop-blur-md flex justify-between items-center z-10 flex-shrink-0 shadow-sm">
         <div class="flex items-center space-x-3">
-            <span class="text-3xl">🍞</span>
-            <h1 class="text-2xl md:text-3xl font-black tracking-wider text-rose-600">
-                安得烈食物銀行 - 秒數默數大挑戰
+            <span class="text-3xl">🌸</span>
+            <h1 class="text-2xl md:text-3xl font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 via-amber-500 to-rose-500">
+                安得烈食物銀行 - 春日食物接接樂
             </h1>
         </div>
-        <div id="game-stage-badge" class="hidden px-4 py-1.5 rounded-full text-sm md:text-lg font-bold bg-rose-100 border border-pink-300 text-rose-700">
-            準備中
+        <div class="flex items-center gap-3">
+            <div id="game-stage-badge" class="px-4 py-1.5 rounded-full text-sm md:text-lg font-bold bg-amber-100 border border-amber-300 text-amber-800 shadow-sm">
+                準備中
+            </div>
         </div>
     </header>
 
@@ -97,67 +85,71 @@
     <main class="flex-grow flex items-center justify-center p-2 md:p-4 relative overflow-hidden">
 
         <!-- 大螢幕 - 遊戲大廳 / 掃碼進入 -->
-        <div id="view-lobby" class="w-full max-w-[96vw] h-full max-h-[90vh] bg-white/80 border-2 border-pink-200 rounded-3xl p-4 md:p-6 shadow-xl backdrop-blur-xl relative flex flex-col justify-between overflow-hidden">
+        <div id="view-lobby" class="w-full max-w-[96vw] h-full max-h-[90vh] bg-white/80 border-2 border-amber-200/80 rounded-3xl p-4 md:p-6 shadow-xl backdrop-blur-xl relative flex flex-col justify-between overflow-hidden">
             <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-center h-full">
                 
                 <!-- 左側：QR Code -->
-                <div class="md:col-span-6 lg:col-span-7 flex flex-col items-center justify-center border-b md:border-b-0 md:border-r border-rose-200 pr-0 md:pr-6 pb-2 md:pb-0 text-center h-full overflow-hidden">
-                    <div class="p-4 bg-gradient-to-br from-pink-200 via-rose-200 to-pink-300 rounded-3xl shadow-[0_0_40px_rgba(255,182,193,0.6)] my-auto flex-shrink-0" style="width: 512px; height: 512px;">
-                        <div id="qrcode" class="bg-white p-2 rounded-2xl border-2 border-white flex items-center justify-center shadow-inner" style="width: 480px; height: 480px;"></div>
+                <div class="md:col-span-6 lg:col-span-7 flex flex-col items-center justify-center border-b md:border-b-0 md:border-r border-amber-200/80 pr-0 md:pr-6 pb-2 md:pb-0 text-center h-full overflow-hidden">
+                    <div class="p-5 bg-gradient-to-br from-amber-200 via-rose-200 to-emerald-200 rounded-3xl shadow-lg my-auto transition-transform hover:scale-[1.02] duration-300 border-2 border-white">
+                        <div id="qrcode" class="bg-white p-4 rounded-2xl border-2 border-amber-100 flex items-center justify-center shadow-inner"></div>
                     </div>
                 </div>
 
                 <!-- 右側：玩家名單 & 設定選項 & 開始按鈕 -->
                 <div class="md:col-span-6 lg:col-span-5 flex flex-col justify-between h-full overflow-hidden pl-0 md:pl-2">
                     <div class="flex-grow flex flex-col overflow-hidden">
-                        <h2 class="text-2xl md:text-3xl font-bold text-rose-700 mb-4 flex items-center justify-between flex-shrink-0">
+                        <h2 class="text-2xl md:text-3xl font-bold text-emerald-700 mb-4 flex items-center justify-between flex-shrink-0">
                             <span class="flex items-center gap-2"><i class="fa-solid fa-users"></i> 已加入人員名單</span>
-                            <span id="player-count-badge" class="text-xl bg-pink-100 text-rose-700 px-4 py-1.5 rounded-full font-black border border-pink-300">0 人</span>
+                            <span id="player-count-badge" class="text-xl bg-emerald-100 text-emerald-800 px-4 py-1.5 rounded-full font-black border border-emerald-300 shadow-sm">0 人</span>
                         </h2>
 
                         <div id="player-list-lobby" class="grid grid-cols-2 lg:grid-cols-3 gap-2.5 overflow-hidden flex-grow content-start">
-                            <div class="col-span-full text-rose-400 text-center py-12 font-bold border-2 border-dashed border-rose-200 rounded-2xl text-lg bg-rose-50/50">
+                            <div class="col-span-full text-amber-700/60 text-center py-12 font-bold border-2 border-dashed border-amber-300/60 rounded-2xl text-lg bg-amber-50/50">
                                 尚無玩家連線，請掃描左側 QR Code 加入...
                             </div>
                         </div>
                     </div>
 
-                    <!-- 遊戲參數設定區塊 -->
-                    <div class="w-full pt-4 flex-shrink-0 bg-rose-50/90 border border-pink-200 rounded-2xl p-4 my-2 shadow-sm">
-                        <h3 class="text-rose-700 font-bold text-base mb-2 flex items-center gap-2">
-                            <i class="fa-solid fa-sliders"></i> 遊戲參數設定
+                    <!-- 遊戲參數設定區塊 (右下角選單) -->
+                    <div class="w-full pt-4 flex-shrink-0 bg-amber-50/80 border border-amber-200 rounded-2xl p-4 my-2 shadow-inner">
+                        <h3 class="text-amber-800 font-bold text-base mb-2 flex items-center gap-2">
+                            <i class="fa-solid fa-sliders"></i> 遊戲模式設定
                         </h3>
                         <div class="grid grid-cols-3 gap-3">
                             <div class="flex flex-col gap-1">
-                                <label for="select-rounds-count" class="text-xs text-rose-800 font-bold">回合數</label>
-                                <select id="select-rounds-count" class="bg-white text-rose-800 font-bold p-2 rounded-xl border border-pink-300 outline-none focus:border-rose-400 cursor-pointer shadow-sm">
-                                    <option value="1">1 回</option>
-                                    <option value="3" selected>3 回</option>
-                                    <option value="5">5 回</option>
+                                <label for="select-food-count" class="text-xs text-amber-900 font-bold">食物數量</label>
+                                <select id="select-food-count" class="bg-white text-slate-700 font-bold p-2 rounded-xl border border-amber-300 outline-none focus:border-emerald-500 cursor-pointer shadow-sm">
+                                    <option value="20">20 個</option>
+                                    <option value="40" selected>40 個</option>
+                                    <option value="60">60 個</option>
+                                    <option value="80">80 個</option>
+                                    <option value="100">100 個</option>
                                 </select>
                             </div>
                             <div class="flex flex-col gap-1">
-                                <label for="select-max-seconds" class="text-xs text-rose-800 font-bold">最大秒數</label>
-                                <select id="select-max-seconds" class="bg-white text-rose-800 font-bold p-2 rounded-xl border border-pink-300 outline-none focus:border-rose-400 cursor-pointer shadow-sm">
-                                    <option value="10">10 秒</option>
-                                    <option value="20" selected>20 秒</option>
-                                    <option value="30">30 秒</option>
+                                <label for="select-drop-speed" class="text-xs text-amber-900 font-bold">掉落速度</label>
+                                <select id="select-drop-speed" class="bg-white text-slate-700 font-bold p-2 rounded-xl border border-amber-300 outline-none focus:border-emerald-500 cursor-pointer shadow-sm">
+                                    <option value="1.5">超緩慢</option>
+                                    <option value="2.5">緩慢</option>
+                                    <option value="3.5" selected>正常</option>
+                                    <option value="5.0">快速</option>
+                                    <option value="7.0">極速</option>
                                 </select>
                             </div>
                             <div class="flex flex-col gap-1">
-                                <label for="select-ai-count" class="text-xs text-rose-800 font-bold">AI參賽人數</label>
-                                <select id="select-ai-count" class="bg-white text-rose-800 font-bold p-2 rounded-xl border border-pink-300 outline-none focus:border-rose-400 cursor-pointer shadow-sm">
-                                    <option value="1" selected>1 名</option>
+                                <label for="select-ai-count" class="text-xs text-amber-900 font-bold">AI參賽人數</label>
+                                <select id="select-ai-count" class="bg-white text-slate-700 font-bold p-2 rounded-xl border border-amber-300 outline-none focus:border-emerald-500 cursor-pointer shadow-sm">
+                                    <option value="0" selected>0 名</option>
+                                    <option value="1">1 名</option>
                                     <option value="2">2 名</option>
-                                    <option value="3">3 名</option>
                                 </select>
                             </div>
                         </div>
                     </div>
 
                     <div id="lobby-start-box" class="w-full pt-2 flex-shrink-0">
-                        <button id="btn-start-game" class="hidden w-full py-4 text-3xl font-black text-white bg-gradient-to-r from-pink-400 via-rose-400 to-pink-500 rounded-2xl shadow-[0_4px_20px_rgba(244,63,94,0.3)] hover:brightness-105 active:scale-95 transition-all animate-bounce border-2 border-white">
-                            🎮 開始比賽
+                        <button id="btn-start-game" class="hidden w-full py-4 text-3xl font-black text-amber-950 bg-gradient-to-r from-amber-300 via-emerald-300 to-teal-300 rounded-2xl shadow-lg hover:brightness-105 active:scale-95 transition-all animate-bounce border-2 border-white">
+                            🎮 開始春日熱血賽
                         </button>
                     </div>
                 </div>
@@ -165,210 +157,424 @@
             </div>
         </div>
 
-        <!-- 手機端 - 參賽者控制器 -->
-        <div id="view-player-mobile" class="hidden fixed inset-0 z-50 bg-rose-50 p-4 flex-col justify-between overflow-hidden">
-            <div id="mobile-top-bar" class="text-center space-y-1 flex-shrink-0">
-                <span class="text-3xl">🍞</span>
-                <h2 class="text-xl font-black text-rose-600">安得烈默數感應器</h2>
-                <p id="player-mobile-name" class="text-rose-400 font-bold text-base">正在連線大螢幕...</p>
+        <!-- 手機端 - 玩家控制器 (可選指尖觸控滑動或體感傾斜控制) -->
+        <div id="view-player-mobile" class="hidden fixed inset-0 z-50 bg-gradient-to-b from-sky-100 via-amber-50 to-emerald-100 p-4 flex-col justify-between overflow-hidden">
+            <div id="mobile-top-bar" class="text-center space-y-1 flex-shrink-0 pt-2">
+                <span class="text-4xl">🌸</span>
+                <h2 class="text-xl font-black text-emerald-800">食物接接樂體感/觸控控制器</h2>
+                <p id="player-mobile-name" class="text-amber-700 font-bold text-base">正在連線大螢幕...</p>
+                <div id="mobile-avatar-display" class="hidden text-6xl py-2 animate-bounce">
+                    🐱
+                </div>
             </div>
 
-            <div id="mobile-join-form" class="space-y-4 bg-white/90 p-6 rounded-3xl border-2 border-pink-200 shadow-lg my-auto">
+            <div id="mobile-join-form" class="space-y-4 bg-white/90 p-6 rounded-3xl border-2 border-amber-200 my-auto shadow-xl backdrop-blur-md">
                 <input type="text" id="mobile-name-input" maxlength="8" placeholder="請輸入您的暱稱..." 
-                    class="w-full bg-rose-50 border-2 border-pink-300 p-4 rounded-xl text-center text-rose-800 text-xl font-bold focus:border-pink-400 outline-none">
-                <button id="btn-mobile-join" class="w-full py-4 bg-gradient-to-r from-pink-300 to-rose-400 text-white font-black text-xl rounded-xl shadow-md border border-white">
+                    class="w-full bg-amber-50/50 border-2 border-amber-300 p-4 rounded-2xl text-center text-slate-800 text-xl font-bold focus:border-emerald-500 outline-none shadow-inner">
+                <button id="btn-mobile-join" class="w-full py-4 bg-gradient-to-r from-emerald-400 to-teal-400 text-white font-black text-xl rounded-2xl shadow-lg border-2 border-white">
                     確認參賽
                 </button>
             </div>
 
-            <!-- 手機端：顯示資訊區塊 -->
-            <div id="mobile-game-panel" class="hidden flex-col space-y-4 my-auto bg-white/90 border-2 border-pink-300 p-6 rounded-3xl shadow-xl text-center">
-                <div class="flex justify-between items-center border-b border-pink-200 pb-3">
-                    <span class="text-rose-700 font-extrabold text-lg">參賽者：<span id="m-disp-name" class="text-rose-900">--</span></span>
-                    <span id="m-disp-round" class="bg-rose-100 text-rose-700 px-3 py-1 rounded-full text-sm font-black border border-pink-300">第 - 回合</span>
-                </div>
+            <!-- 控制器 - 指尖觸控操控區域 & 靈敏度調整功能 -->
+            <div id="mobile-controls" class="hidden flex-col items-center justify-center gap-3 w-full my-auto bg-white/80 border-2 border-emerald-300 rounded-3xl p-4 shadow-xl backdrop-blur-md">
+                
+                <!-- 頂部：靈敏度調節與重置按鈕區塊 -->
+                <div class="w-full flex items-center justify-between px-2 gap-2">
+                    <div class="flex items-center gap-1.5 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-xl shadow-sm">
+                        <i class="fa-solid fa-gauge-high text-amber-600 text-xs"></i>
+                        <label for="select-sensitivity" class="text-xs font-bold text-amber-900 whitespace-nowrap">靈敏度：</label>
+                        <select id="select-sensitivity" class="bg-white text-slate-800 font-black text-xs p-1 rounded-lg border border-amber-300 outline-none cursor-pointer">
+                            <option value="0.5">極低 (0.5x)</option>
+                            <option value="0.8">低 (0.8x)</option>
+                            <option value="1.0" selected>標準 (1.0x)</option>
+                            <option value="1.5">高 (1.5x)</option>
+                            <option value="2.0">極高 (2.0x)</option>
+                        </select>
+                    </div>
 
-                <div class="py-2">
-                    <div class="text-rose-500 text-base font-bold">🎯 本回合目標題目</div>
-                    <div id="m-disp-target" class="text-5xl font-black text-rose-600 mt-1">-- 秒</div>
-                </div>
-
-                <div class="p-4 bg-rose-50 border border-pink-200 rounded-2xl">
-                    <div class="text-rose-400 text-sm font-bold">⏱️ 作答狀態</div>
-                    <div id="m-disp-current" class="text-3xl font-black text-rose-600 mt-1">-- 秒</div>
-                </div>
-
-                <div class="pt-2">
-                    <button id="btn-mobile-shake-fallback" class="w-full py-4 bg-gradient-to-r from-rose-400 to-pink-400 hover:from-rose-500 hover:to-pink-500 text-white font-black text-2xl rounded-2xl shadow-lg active:scale-95 transition border-2 border-white">
-                        👋 搖晃手機 或 點此送出秒數！
+                    <button id="btn-recalibrate" class="px-3 py-1.5 bg-amber-400 active:bg-amber-500 text-amber-950 font-bold rounded-xl shadow border border-white text-xs flex items-center gap-1 whitespace-nowrap">
+                        <i class="fa-solid fa-rotate-right"></i> 重置原點
                     </button>
+                </div>
+
+                <!-- 指尖觸控操控面板 (Touchpad) -->
+                <div id="touchpad-area" class="w-full h-52 bg-gradient-to-b from-slate-800 to-slate-900 rounded-2xl border-2 border-slate-700 relative overflow-hidden shadow-inner flex flex-col items-center justify-center touch-none select-none cursor-grab active:cursor-grabbing">
+                    <!-- 背景網格裝飾紋理 -->
+                    <div class="absolute inset-0 bg-[radial-gradient(#334155_1px,transparent_1px)] [background-size:16px_16px] opacity-40 pointer-events-none"></div>
+                    <!-- 十字輔助線 -->
+                    <div class="absolute w-full h-0.5 bg-slate-700/60 pointer-events-none"></div>
+                    <div class="absolute h-full w-0.5 bg-slate-700/60 pointer-events-none"></div>
+                    
+                    <!-- 指尖操控軌跡動態反饋視覺 -->
+                    <div id="touch-pointer" class="w-12 h-12 bg-emerald-500/80 border-2 border-emerald-300 rounded-full transition-transform duration-75 absolute shadow-lg shadow-emerald-500/50 flex items-center justify-center pointer-events-none" style="top: 50%; left: 50%; transform: translate(-50%, -50%);">
+                        <div class="w-3 h-3 bg-white rounded-full"></div>
+                    </div>
+
+                    <!-- 引導提示文字 -->
+                    <div id="touchpad-hint" class="text-slate-400 font-bold text-sm pointer-events-none z-10 flex flex-col items-center gap-1">
+                        <i class="fa-solid fa-hand-pointer text-2xl text-emerald-400 animate-bounce"></i>
+                        <span>指尖在此滑動操控上下左右</span>
+                    </div>
+                </div>
+
+                <div class="text-slate-600 font-bold text-xs text-center flex items-center justify-between w-full px-2">
+                    <span>傾斜角度: <strong id="tilt-angle-text" class="text-emerald-700 font-black">0°, 0°</strong></span>
+                    <span class="text-slate-400">|</span>
+                    <span>觸控/傾斜雙模式支援</span>
                 </div>
             </div>
 
             <!-- 手機端 - 最終結算 -->
-            <div id="mobile-final-result" class="hidden my-auto flex-col items-center justify-center space-y-4 text-center bg-white border-2 border-pink-300 p-8 rounded-3xl shadow-xl w-full">
+            <div id="mobile-final-result" class="hidden my-auto flex-col items-center justify-center space-y-4 text-center bg-white border-2 border-amber-300 p-8 rounded-3xl shadow-2xl w-full">
                 <span class="text-6xl" id="mobile-result-icon">🏆</span>
-                <h2 class="text-2xl font-black text-rose-700">比賽最終結算</h2>
+                <h2 class="text-2xl font-black text-amber-700">遊戲最終結算</h2>
                 
                 <div class="flex flex-col items-center space-y-1 my-2">
-                    <div class="text-5xl font-black text-rose-600 tracking-wider" id="mobile-result-rank">第 - 名</div>
-                    <div class="text-lg font-bold text-rose-400" id="mobile-result-total">共 - 人</div>
+                    <div class="text-5xl font-black text-slate-800 tracking-wider" id="mobile-result-rank">第 - 名</div>
+                    <div class="text-lg font-bold text-slate-500" id="mobile-result-total">共 - 人</div>
                 </div>
 
-                <div id="mobile-result-status" class="text-lg font-bold text-rose-500 pt-2">感謝您的熱情參與！</div>
+                <div class="text-2xl font-bold text-slate-700">總得分：<span id="mobile-result-score" class="text-emerald-600 font-black">0</span> 分</div>
+                
+                <div id="mobile-result-status" class="text-base font-bold text-emerald-800 pt-2">感謝您的熱情參與！</div>
             </div>
 
-            <div id="mobile-status-text" class="text-center text-rose-400 font-bold py-1 text-sm flex-shrink-0">
+            <div id="mobile-status-text" class="text-center text-emerald-900 font-bold py-2 text-sm flex-shrink-0 bg-white/50 rounded-full my-2 border border-emerald-200">
                 連線成功！請輸入暱稱完成登錄
             </div>
         </div>
 
-        <!-- 大螢幕 - 回合宣告 / 秒數提示 Splash -->
-        <div id="view-splash" class="hidden fixed inset-0 z-40 bg-rose-50/95 backdrop-blur-md flex flex-col items-center justify-center animate-fade-in">
-            <span id="splash-subtext" class="text-2xl text-rose-400 font-bold tracking-widest mb-2">ROUND ANNOUNCEMENT</span>
-            <h1 id="splash-maintext" class="text-6xl md:text-8xl font-black text-rose-600">
-                第 1 回合
-            </h1>
-        </div>
-
-        <!-- 大螢幕 - 遊戲主畫面 -->
-        <div id="view-game" class="hidden w-full h-full max-h-[96vh] grid grid-cols-1 md:grid-cols-12 gap-4 overflow-hidden relative">
+        <!-- 大螢幕 - 遊戲主畫面 (Canvas 遊戲場景) -->
+        <div id="view-game" class="hidden w-full h-full max-h-[96vh] grid grid-cols-1 md:grid-cols-12 gap-4 overflow-hidden">
             
-            <!-- 右上角：數數倒數顯示 (1, 2, 3) -->
-            <div id="top-right-countdown" class="hidden absolute top-4 right-8 z-30 bg-white/90 border-2 border-pink-300 px-8 py-4 rounded-3xl shadow-lg flex items-center gap-4">
-                <span class="text-rose-500 font-black text-2xl">提示計時：</span>
-                <span id="countdown-num-text" class="text-8xl md:text-9xl font-black text-rose-600 tracking-wider">1</span>
-            </div>
-
-            <!-- 左側：實時排行榜 -->
-            <div class="md:col-span-5 lg:col-span-4 bg-white/80 border border-pink-200 rounded-3xl p-4 backdrop-blur-xl flex flex-col justify-between overflow-hidden h-full shadow-md">
+            <!-- 左側：排行榜 -->
+            <div class="md:col-span-4 lg:col-span-3 bg-white/80 border-2 border-amber-200 rounded-3xl p-3 backdrop-blur-xl flex flex-col justify-between overflow-hidden h-full shadow-lg">
                 <div class="overflow-hidden flex flex-col h-full">
-                    <h3 class="text-rose-700 text-xl md:text-2xl font-black mb-3 flex items-center justify-between flex-shrink-0 border-b border-pink-200 pb-2">
-                        <span>🔥 實時全場排行榜</span>
-                        <span id="game-total-players-badge" class="text-base bg-rose-100 text-rose-700 px-3 py-1 rounded-full border border-pink-300">0 人</span>
+                    <h3 class="text-emerald-800 text-xl md:text-2xl font-black mb-3 flex items-center justify-between flex-shrink-0 border-b border-amber-200 pb-2">
+                        <span>🌸 實時全場得分榜</span>
+                        <span id="game-total-players-badge" class="text-base bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full border border-emerald-300">0 人</span>
                     </h3>
                     <div id="players-dashboard" class="flex flex-col space-y-2.5 overflow-hidden flex-grow"></div>
                 </div>
-                <div class="mt-2 pt-2 border-t border-pink-200 text-right flex-shrink-0">
-                    <span id="round-status-hint" class="text-rose-500 font-bold text-base">默數計時中，請搖晃手機...</span>
-                </div>
             </div>
 
-            <!-- 右側：中央題目與默數展示區 (秒數字體加大 1 倍) -->
-            <div class="md:col-span-7 lg:col-span-8 bg-white/90 border-2 border-pink-200 rounded-3xl p-6 md:p-8 shadow-lg backdrop-blur-xl flex flex-col items-center justify-center text-center overflow-hidden h-full relative">
-                <div id="game-round-title" class="text-2xl md:text-3xl font-black text-rose-600 tracking-wider mb-4">
-                    第 1 回合
+            <!-- 右側：遊戲畫布 -->
+            <div class="md:col-span-8 lg:col-span-9 bg-white/90 border-2 border-emerald-300 rounded-3xl p-2 shadow-2xl backdrop-blur-xl flex flex-col items-center justify-center relative overflow-hidden h-full">
+                <div id="game-hud" class="absolute top-4 left-6 right-6 flex justify-between items-center z-10 pointer-events-none">
+                    <span id="remaining-food-badge" class="text-2xl font-black text-amber-900 bg-amber-100/90 px-4 py-2 rounded-2xl border-2 border-amber-300 shadow">
+                        🍎 剩餘物資：0/0
+                    </span>
+                    <span id="game-status-hint" class="text-emerald-800 font-bold text-xl bg-emerald-100/90 px-4 py-2 rounded-2xl border-2 border-emerald-300 shadow">
+                        接取正確物資加分，不合適物資爆破扣分！
+                    </span>
                 </div>
-                
-                <div class="p-8 md:p-12 bg-rose-50/80 border-2 border-pink-200 rounded-3xl w-full max-w-2xl shadow-inner flex flex-col items-center justify-center">
-                    <div class="text-rose-500 text-2xl md:text-3xl font-bold mb-2">🎯 本回合題目秒數</div>
-                    <!-- 字體由 text-7xl md:text-9xl 加大 1 倍至 text-9xl md:text-[14rem] -->
-                    <div id="big-target-seconds" class="text-9xl md:text-[14rem] font-black text-rose-600 drop-shadow-md my-4 leading-none transition-all">
-                        -- 秒
-                    </div>
-                    <p class="text-rose-400 text-lg md:text-xl font-bold mt-2">請在心中默數，到達目標秒數時快速搖晃手機！</p>
-                </div>
+                <canvas id="gameCanvas" class="w-full h-full rounded-2xl bg-gradient-to-b from-sky-100 via-amber-50 to-emerald-100 border border-emerald-200"></canvas>
             </div>
         </div>
 
-        <!-- 每回合結束：顯示前三名於中央，其餘在兩側 -->
-        <div id="view-round-result" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-rose-950/40 backdrop-blur-md p-6">
-            <div class="w-full max-w-7xl h-full max-h-[90vh] bg-white border-2 border-pink-300 rounded-3xl p-6 flex flex-col justify-between shadow-2xl overflow-hidden">
+        <!-- 大螢幕 - 最後得獎頒獎畫面 -->
+        <div id="view-result" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-md p-6">
+            <div class="w-full max-w-7xl h-full max-h-[90vh] bg-gradient-to-b from-amber-50 to-orange-50 border-4 border-amber-300 rounded-3xl p-6 md:p-8 flex flex-col justify-between shadow-2xl overflow-hidden relative">
                 
-                <h2 id="round-result-title" class="text-3xl md:text-5xl font-black text-center text-rose-600 mb-2 flex-shrink-0">
-                    🏆 第 1 回合 結算榜 🏆
+                <h2 class="text-3xl md:text-5xl font-black text-center text-transparent bg-clip-text bg-gradient-to-r from-amber-600 via-rose-500 to-emerald-600 mb-2 flex-shrink-0 drop-shadow-sm">
+                    🏆 最終春日頒獎典禮 🏆
                 </h2>
 
                 <div class="grid grid-cols-1 md:grid-cols-12 gap-6 flex-grow overflow-hidden my-2">
-                    <!-- 左側排名 -->
-                    <div class="md:col-span-3 bg-rose-50 rounded-2xl p-4 border border-pink-200 flex flex-col justify-between overflow-hidden">
-                        <div class="flex justify-between items-center mb-3 border-b border-pink-200 pb-2 flex-shrink-0">
-                            <span class="font-black text-xl text-rose-700">排名 (左)</span>
-                            <span id="round-left-count" class="text-xs bg-rose-100 text-rose-600 px-2.5 py-1 rounded-full font-bold">0 人</span>
+                    
+                    <div class="md:col-span-3 bg-white/80 rounded-2xl p-4 border border-amber-200 flex flex-col justify-between overflow-hidden shadow-sm">
+                        <div class="flex justify-between items-center mb-3 border-b border-amber-200 pb-2 flex-shrink-0">
+                            <span class="font-black text-xl md:text-2xl text-amber-800">全場排名 (左)</span>
+                            <span id="result-left-count" class="text-xs bg-amber-100 text-amber-800 px-2.5 py-1 rounded-full font-bold">0 人</span>
                         </div>
-                        <div id="round-left-list" class="space-y-2 overflow-hidden pr-1 flex-grow"></div>
+                        <div id="result-left-list" class="space-y-2 overflow-hidden pr-1 flex-grow"></div>
                     </div>
 
-                    <!-- 中間前三名展現區 -->
-                    <div class="md:col-span-6 bg-pink-50/50 border-2 border-pink-200 rounded-2xl p-6 flex flex-col items-center justify-center text-center overflow-hidden shadow-inner">
+                    <div class="md:col-span-6 bg-gradient-to-b from-amber-100/60 to-rose-100/60 border-2 border-amber-300 rounded-2xl p-6 flex flex-col items-center justify-center text-center overflow-hidden shadow-inner">
                         <div class="w-full flex flex-col items-center">
-                            <span class="text-rose-400 font-black tracking-widest text-sm mb-3">TOP 3 ROUND WINNERS</span>
-                            <div id="round-top3-container" class="w-full flex flex-col items-center space-y-4 my-auto"></div>
+                            <span class="text-amber-800 font-black tracking-widest text-base mb-3 bg-white/80 px-4 py-1 rounded-full border border-amber-300">✨ TOP 3 WINNERS ✨</span>
+                            <div id="top3-container" class="w-full flex flex-col items-center space-y-4 my-auto"></div>
                         </div>
                     </div>
 
-                    <!-- 右側排名 & 下一回合按鈕 -->
-                    <div class="md:col-span-3 flex flex-col justify-between gap-3 overflow-hidden">
-                        <div class="bg-rose-50 rounded-2xl p-4 border border-pink-200 flex flex-col justify-between overflow-hidden flex-grow">
-                            <div class="flex justify-between items-center mb-3 border-b border-pink-200 pb-2 flex-shrink-0">
-                                <span class="font-black text-xl text-rose-700">排名 (右)</span>
-                                <span id="round-right-count" class="text-xs bg-rose-100 text-rose-600 px-2.5 py-1 rounded-full font-bold">0 人</span>
-                            </div>
-                            <div id="round-right-list" class="space-y-2 overflow-hidden pr-1 flex-grow"></div>
+                    <div class="md:col-span-3 bg-white/80 rounded-2xl p-4 border border-amber-200 flex flex-col justify-between overflow-hidden shadow-sm">
+                        <div class="flex justify-between items-center mb-3 border-b border-amber-200 pb-2 flex-shrink-0">
+                            <span class="font-black text-xl md:text-2xl text-amber-800">全場排名 (右)</span>
+                            <span id="result-right-count" class="text-xs bg-amber-100 text-amber-800 px-2.5 py-1 rounded-full font-bold">0 人</span>
                         </div>
-
-                        <div class="w-full flex-shrink-0">
-                            <button id="btn-next-round" class="w-full py-4 text-2xl md:text-3xl font-black text-white bg-gradient-to-r from-pink-400 to-rose-400 rounded-2xl shadow-lg hover:brightness-105 active:scale-95 transition-all border-2 border-white">
-                                ⚔️ 進行下一回合
-                            </button>
-                        </div>
+                        <div id="result-right-list" class="space-y-2 overflow-hidden pr-1 flex-grow"></div>
                     </div>
+
                 </div>
 
-            </div>
-        </div>
-
-        <!-- 頒獎模式：全螢幕等分顯示各回合前三名 -->
-        <div id="view-final-result" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-rose-950/60 backdrop-blur-md p-6">
-            <div class="w-full max-w-[96vw] h-full max-h-[92vh] bg-white/95 border-4 border-pink-300 rounded-3xl p-6 md:p-8 flex flex-col justify-between shadow-2xl overflow-hidden relative">
-                
-                <h2 class="text-4xl md:text-6xl font-black text-center text-rose-600 mb-4 flex-shrink-0 drop-shadow-sm">
-                    🏆 榮譽頒獎典禮 - 各回合前三名 🏆
-                </h2>
-
-                <!-- 滿版等分網格顯示各回合前 3 名 -->
-                <div id="rounds-awards-grid" class="grid gap-6 flex-grow overflow-y-auto my-2 p-2 w-full items-center">
-                    <!-- 動態生成各回合面板 -->
-                </div>
-
-                <div class="text-center pt-2 flex-shrink-0">
-                    <p class="text-rose-400 font-bold text-lg">🎉 恭喜以上所有獲勝者！感謝大家熱情參與！ 🎉</p>
-                </div>
             </div>
         </div>
 
     </main>
 
-    <footer id="main-footer" class="w-full py-2 px-4 border-t border-pink-200 bg-white/70 text-center text-rose-400 text-sm flex-shrink-0 font-bold">
-        安得烈食物銀行 關懷弱勢・愛合格不浪費 | 秒數默數大挑戰
+    <footer id="main-footer" class="w-full py-2 px-4 border-t border-amber-200/60 bg-white/60 text-center text-slate-600 text-sm flex-shrink-0">
+        安得烈食物銀行 關懷弱勢・愛合格不浪費 | 食物接接樂互動遊戲
     </footer>
 
     <script>
+        // 動物角色清單
+        const animalAvatars = ['🐶', '🐱', '🐭', '🐹', '🐰', '🦊', '🐻', '🐼', '🐨', '🐯', '🦁', '🐮', '🐷', '🐸', '🐵', '🐔', '🐧', '🐦', '🦄'];
+
+        // 正確物資選單（基本分+2分）
+        const validFoodPool = [
+            { name: "嬰兒奶粉", icon: "🍼", score: 2 },
+            { name: "嬰幼兒尿布", icon: "👶", score: 2 },
+            { name: "嬰幼兒濕紙巾", icon: "🧻", score: 2 },
+            { name: "衛生紙", icon: "🧻", score: 2 },
+            { name: "保久乳", icon: "🥛", score: 2 },
+            { name: "肉鬆", icon: "🥫", score: 2 },
+            { name: "沖泡麥片", icon: "🥣", score: 2 },
+            { name: "肉類罐頭", icon: "🥫", score: 2 },
+            { name: "玉米罐頭", icon: "🌽", score: 2 },
+            { name: "麵條", icon: "🍜", score: 2 },
+            { name: "肉類調理包", icon: "🍲", score: 2 },
+            { name: "白米", icon: "🍚", score: 2 },
+            { name: "素肉鬆", icon: "🌱", score: 2 },
+            { name: "素食調理包", icon: "🥗", score: 2 },
+            { name: "滴雞精", icon: "🐔", score: 2 },
+            { name: "軟質粥品", icon: "🥣", score: 2 },
+            { name: "易咬餅乾", icon: "🍪", score: 2 },
+            { name: "醫囑營養品", icon: "💊", score: 2 },
+            { name: "尿布", icon: "👶", score: 2 },
+            { name: "專案物資", icon: "📦", score: 2 },
+            { name: "養生珍菇雞湯", icon: "🍲", score: 2 },
+            { name: "花生豬腳", icon: "🍖", score: 2 },
+            { name: "佛跳牆", icon: "🍲", score: 2 },
+            { name: "紅燒羊肉爐", icon: "🍲", score: 2 },
+            { name: "筍乾焢肉", icon: "🥩", score: 2 },
+            { name: "櫻花蝦米糕", icon: "🍚", score: 2 }
+        ];
+
+        // 不可放入物資選單（基本分-1分）
+        const invalidFoodPool = [
+            { name: "辣味豆干", icon: "🌶️", score: -1 },
+            { name: "辣味罐頭", icon: "🌶️", score: -1 },
+            { name: "玻璃罐頭", icon: "🫙", score: -1 },
+            { name: "辣味調理包", icon: "🌶️", score: -1 },
+            { name: "麻辣鴨血", icon: "🥘", score: -1 },
+            { name: "咖啡", icon: "☕", score: -1 },
+            { name: "洋芋片", icon: "🥔", score: -1 },
+            { name: "泡麵", icon: "🍜", score: -1 },
+            { name: "碳酸飲料", icon: "🥤", score: -1 },
+            { name: "生鮮蔬菜", icon: "🥬", score: -1 },
+            { name: "醬瓜罐頭", icon: "🫙", score: -1 }
+        ];
+
         let peer = null;
         let hostConn = null;
         let players = [];
         let myPlayerId = null;
+        let myAvatar = '🐱';
 
-        let totalRounds = 3;
-        let maxSeconds = 20;
-        let aiCount = 1;
+        // 控制參數 (傾斜與靈敏度)
+        let zeroGamma = 0; 
+        let zeroBeta = 0;  
+        let isOrientationBound = false;
+        let sensitivityMultiplier = 1.0;
 
-        let currentRound = 1;
-        let targetSeconds = 0;
-        let roundStartTime = 0;
-        let isRoundActive = false;
+        // 遊戲運行設定參數
+        let totalFoodToSpawn = 40;
+        let foodDropSpeed = 3.5;
+        let spawnedFoodCount = 0;
+        let activeFoods = [];
+        let scorePopups = []; // 儲存躍動得分特效 (+2 / -1)
+        let explosionParticles = []; // 儲存爆炸特效粒子
+        let isGameRunning = false;
 
+        // Canvas 設定
+        let canvas, ctx;
+
+        // 音效 Web Audio API 系統
         let audioCtx = null;
-        let heartbeatInterval = null;
         let currentBgmType = null;
         let bgmTimeoutId = null;
 
-        // 各回合紀錄 (用於最後頒獎模式顯示每回合前三名)
-        let roundHistoryResults = []; // [{ round: 1, target: 10, top3: [...] }]
+        function getAudioContext() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            return audioCtx;
+        }
 
-        // 搖晃檢測參數
-        let lastShakeTime = 0;
-        let lastX = null, lastY = null, lastZ = null;
+        // 單音調播放器（供問答遊戲頒獎音樂使用）
+        function playSingleNote(freq, duration, type = 'square', gainValue = 0.12) {
+            try {
+                const ctx = getAudioContext();
+                if (freq <= 0) return;
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, ctx.currentTime);
+                gain.gain.setValueAtTime(gainValue, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration * 0.95);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + duration);
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        // 停止背景音樂循環
+        function stopBgm() {
+            currentBgmType = null;
+            if (bgmTimeoutId) {
+                clearTimeout(bgmTimeoutId);
+                bgmTimeoutId = null;
+            }
+        }
+
+        // 播放瑪利歐勝利音樂（問答遊戲頒獎音效）
+        function playMarioVictoryFanfare() {
+            getAudioContext();
+            stopBgm();
+            currentBgmType = 'victory';
+
+            const N = {
+                G3: 196.00, C4: 261.63, E4: 329.63, G4: 392.00,
+                C5: 523.25, E5: 659.25, G5: 783.99, A5: 880.00, B5: 987.77,
+                A5b: 830.61, B5b: 932.33
+            };
+
+            const fanfare = [
+                { f: N.G3, d: 0.2 }, { f: N.C4, d: 0.2 }, { f: N.E4, d: 0.2 },
+                { f: N.G4, d: 0.2 }, { f: N.C5, d: 0.2 }, { f: N.E5, d: 0.2 },
+                { f: N.G5, d: 0.6 }, { f: N.E5, d: 0.6 },
+                
+                { f: N.A5b, d: 0.25 }, { f: N.C5, d: 0.25 }, { f: N.E5, d: 0.25 }, { f: N.A5b, d: 0.6 },
+                { f: N.B5b, d: 0.25 }, { f: 587.33, d: 0.25 }, { f: 698.46, d: 0.25 }, { f: N.B5b, d: 0.6 },
+                
+                { f: N.C5, d: 0.25 }, { f: N.E5, d: 0.25 }, { f: N.G5, d: 0.25 }, { f: 1046.50, d: 2.5 }
+            ];
+
+            let i = 0;
+            function playNext() {
+                if (i >= fanfare.length || currentBgmType !== 'victory') return;
+                const note = fanfare[i];
+                playSingleNote(note.f, note.d, 'square', 0.22);
+                i++;
+                bgmTimeoutId = setTimeout(playNext, note.d * 1000);
+            }
+            playNext();
+        }
+
+        // 播放吃到正確食物的清脆躍動音效
+        function playScoreSound() {
+            try {
+                const ctx = getAudioContext();
+                const now = ctx.currentTime;
+                
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(523.25, now); // C5
+                osc.frequency.exponentialRampToValueAtTime(1046.50, now + 0.15); // C6
+
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+
+                osc.start(now);
+                osc.stop(now + 0.2);
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        // 播放吃到不可放入食物時的爆炸音效
+        function playExplosionSound() {
+            try {
+                const ctx = getAudioContext();
+                const now = ctx.currentTime;
+
+                // 雜訊緩衝區產生低沈爆破音
+                const bufferSize = ctx.sampleRate * 0.3; 
+                const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = Math.random() * 2 - 1;
+                }
+
+                const noise = ctx.createBufferSource();
+                noise.buffer = buffer;
+
+                const filter = ctx.createBiquadFilter();
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(800, now);
+                filter.frequency.exponentialRampToValueAtTime(50, now + 0.3);
+
+                const gain = ctx.createGain();
+                gain.gain.setValueAtTime(0.8, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+
+                noise.connect(filter);
+                filter.connect(gain);
+                gain.connect(ctx.destination);
+
+                noise.start(now);
+                noise.stop(now + 0.3);
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        // 播放煙火爆炸聲效
+        function playFireworkBoomSound() {
+            try {
+                const ctx = getAudioContext();
+                const now = ctx.currentTime;
+
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(160, now);
+                osc.frequency.exponentialRampToValueAtTime(40, now + 0.4);
+
+                gain.gain.setValueAtTime(0.5, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+
+                osc.start(now);
+                osc.stop(now + 0.4);
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        // 產生爆炸粒子特效
+        function createExplosion(x, y) {
+            const colors = ['#f43f5e', '#f97316', '#eab308', '#ef4444', '#ffffff'];
+            for (let i = 0; i < 25; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = 2 + Math.random() * 6;
+                explosionParticles.push({
+                    x: x,
+                    y: y,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed,
+                    size: 3 + Math.random() * 5,
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    alpha: 1.0,
+                    decay: 0.03 + Math.random() * 0.02
+                });
+            }
+        }
 
         window.onload = () => {
             const urlParams = new URLSearchParams(window.location.search);
@@ -385,137 +591,6 @@
                 initHostPeer();
             }
         };
-
-        // Web Audio API 初始化
-        function initAudio() {
-            if (!audioCtx) {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            }
-            if (audioCtx.state === 'suspended') {
-                audioCtx.resume();
-            }
-        }
-
-        // 音樂音效播放工具
-        function playSingleNote(freq, duration, type = 'sine', gainValue = 0.1) {
-            if (!audioCtx || freq <= 0) return;
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.type = type;
-            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-            gain.gain.setValueAtTime(gainValue, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration * 0.95);
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            osc.start();
-            osc.stop(audioCtx.currentTime + duration);
-        }
-
-        function playMarioVictoryFanfare() {
-            initAudio();
-            stopBgm();
-            currentBgmType = 'victory';
-
-            const N = {
-                G3: 196.00, C4: 261.63, E4: 329.63, G4: 392.00,
-                C5: 523.25, E5: 659.25, G5: 783.99, A5: 880.00, B5: 987.77,
-                A5b: 830.61, B5b: 932.33
-            };
-
-            const fanfare = [
-                { f: N.G3, d: 0.2 }, { f: N.C4, d: 0.2 }, { f: N.E4, d: 0.2 },
-                { f: N.G4, d: 0.2 }, { f: N.C5, d: 0.2 }, { f: N.E5, d: 0.2 },
-                { f: N.G5, d: 0.6 }, { f: N.E5, d: 0.6 },
-                
-                { f: N.A5b, d: 0.25 }, { f: N.C5, d: 0.25 }, { f: N.E5, d: 0.25 }, { f: N.A5b, d: 0.6 },
-                { f: N.B5b, d: 0.25 }, { f: N.D5 || 587.33, d: 0.25 }, { f: N.F5 || 698.46, d: 0.25 }, { f: N.B5b, d: 0.6 },
-                
-                { f: N.C5, d: 0.25 }, { f: N.E5, d: 0.25 }, { f: N.G5, d: 0.25 }, { f: N.C6 || 1046.50, d: 2.5 }
-            ];
-
-            let i = 0;
-            function playNext() {
-                if (i >= fanfare.length || currentBgmType !== 'victory') return;
-                const note = fanfare[i];
-                playSingleNote(note.f, note.d, 'square', 0.22);
-                i++;
-                bgmTimeoutId = setTimeout(playNext, note.d * 1000);
-            }
-            playNext();
-        }
-
-        function stopBgm() {
-            currentBgmType = null;
-            if (bgmTimeoutId) {
-                clearTimeout(bgmTimeoutId);
-                bgmTimeoutId = null;
-            }
-        }
-
-        // 模擬心跳聲音 (lub-dub 雙拍)
-        function playHeartbeatSound() {
-            if (!audioCtx) return;
-            const now = audioCtx.currentTime;
-
-            // 第一聲 Lub (較低沉)
-            const osc1 = audioCtx.createOscillator();
-            const gain1 = audioCtx.createGain();
-            osc1.type = 'sine';
-            osc1.frequency.setValueAtTime(60, now);
-            osc1.frequency.exponentialRampToValueAtTime(30, now + 0.12);
-            gain1.gain.setValueAtTime(0.4, now);
-            gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
-            osc1.connect(gain1);
-            gain1.connect(audioCtx.destination);
-            osc1.start(now);
-            osc1.stop(now + 0.12);
-
-            // 第二聲 Dub (間隔 0.15 秒，稍微短促)
-            const osc2 = audioCtx.createOscillator();
-            const gain2 = audioCtx.createGain();
-            osc2.type = 'sine';
-            osc2.frequency.setValueAtTime(50, now + 0.15);
-            osc2.frequency.exponentialRampToValueAtTime(25, now + 0.25);
-            gain2.gain.setValueAtTime(0.3, now + 0.15);
-            gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
-            osc2.connect(gain2);
-            gain2.connect(audioCtx.destination);
-            osc2.start(now + 0.15);
-            osc2.stop(now + 0.25);
-        }
-
-        // 開始全場心跳背景音
-        function startHeartbeatLoop() {
-            stopHeartbeatLoop();
-            playHeartbeatSound();
-            heartbeatInterval = setInterval(() => {
-                playHeartbeatSound();
-            }, 850); // 每 0.85 秒一次心跳
-        }
-
-        function stopHeartbeatLoop() {
-            if (heartbeatInterval) {
-                clearInterval(heartbeatInterval);
-                heartbeatInterval = null;
-            }
-        }
-
-        // 作答跳出彈跳音效
-        function playSubmitPopSound() {
-            if (!audioCtx) return;
-            const now = audioCtx.currentTime;
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.type = 'triangle';
-            osc.frequency.setValueAtTime(300, now);
-            osc.frequency.exponentialRampToValueAtTime(800, now + 0.15);
-            gain.gain.setValueAtTime(0.3, now);
-            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            osc.start(now);
-            osc.stop(now + 0.15);
-        }
 
         function initHostPeer() {
             peer = new Peer();
@@ -536,8 +611,12 @@
                     conn.on('data', (data) => {
                         if (data.type === 'JOIN') {
                             addPlayer(data.name, conn, data.playerId);
-                        } else if (data.type === 'SUBMIT_SECONDS') {
-                            handlePlayerSecondsSubmitted(data.playerId, data.submittedTime);
+                        } else if (data.type === 'TILT') {
+                            const p = players.find(player => player.id === data.playerId);
+                            if (p) {
+                                p.x = Math.max(0.05, Math.min(0.95, p.x + (data.deltaX || 0)));
+                                p.y = Math.max(0.20, Math.min(0.90, p.y + (data.deltaY || 0)));
+                            }
                         }
                     });
 
@@ -549,518 +628,6 @@
             });
         }
 
-        function addPlayer(name, conn, playerId) {
-            if (players.some(p => p.id === playerId)) return;
-
-            const p = {
-                id: playerId,
-                name: name,
-                displayName: name,
-                conn: conn,
-                isAI: false,
-                currentSubmittedTime: null,
-                isFailed: false,
-                diffSeconds: null,
-                streak: 0,
-                historyScores: [],
-                justSubmitted: false // 用於大螢幕躍動觸發標記
-            };
-            players.push(p);
-            renderLobbyPlayers();
-
-            if (players.length >= 1) {
-                document.getElementById('btn-start-game').classList.remove('hidden');
-            }
-        }
-
-        function renderLobbyPlayers() {
-            const container = document.getElementById('player-list-lobby');
-            container.innerHTML = '';
-            document.getElementById('player-count-badge').innerText = `${players.length} 人`;
-
-            players.forEach(p => {
-                const item = document.createElement('div');
-                item.className = 'flex justify-between items-center bg-rose-50 p-2.5 rounded-xl border border-pink-200 text-sm shadow-sm';
-                item.innerHTML = `
-                    <div class="flex items-center gap-2 truncate">
-                        <span class="text-xl">${p.isAI ? '🤖' : '📱'}</span>
-                        <span class="font-bold text-rose-800 truncate">${p.displayName || p.name}</span>
-                    </div>
-                    <span class="text-[10px] ${p.isAI ? 'bg-rose-200 text-rose-700' : 'bg-pink-100 text-rose-600'} px-2 py-0.5 rounded font-bold flex-shrink-0">
-                        ${p.isAI ? 'AI' : '連線'}
-                    </span>
-                `;
-                container.appendChild(item);
-            });
-        }
-
-        document.getElementById('btn-start-game').addEventListener('click', () => {
-            initAudio();
-            finalizePlayersAndStart();
-        });
-
-        function finalizePlayersAndStart() {
-            totalRounds = parseInt(document.getElementById('select-rounds-count').value, 10);
-            maxSeconds = parseInt(document.getElementById('select-max-seconds').value, 10);
-            aiCount = parseInt(document.getElementById('select-ai-count').value, 10);
-
-            // 加入 AI
-            const aiNames = ['安得烈小羅', '特工阿湯哥', '瑪莉歐', '閃電葛葛'];
-            for (let i = 0; i < aiCount; i++) {
-                const aiName = aiNames[i % aiNames.length];
-                players.push({
-                    id: 'ai_' + Date.now() + '_' + i,
-                    name: `${aiName}(AI)`,
-                    displayName: aiName,
-                    conn: null,
-                    isAI: true,
-                    currentSubmittedTime: null,
-                    isFailed: false,
-                    diffSeconds: null,
-                    streak: 0,
-                    historyScores: [],
-                    justSubmitted: false
-                });
-            }
-
-            renderLobbyPlayers();
-            
-            document.getElementById('view-lobby').classList.add('hidden');
-            document.getElementById('main-header').classList.add('hidden');
-            document.getElementById('main-footer').classList.add('hidden');
-
-            document.getElementById('view-game').classList.remove('hidden');
-            document.getElementById('view-game').classList.add('grid');
-
-            players.forEach(p => {
-                if (p.conn) p.conn.send({ type: 'GAME_START' });
-            });
-
-            currentRound = 1;
-            roundHistoryResults = [];
-            
-            // 整場比賽啟動心跳背景聲
-            startHeartbeatLoop();
-            startRoundFlow();
-        }
-
-        function startRoundFlow() {
-            // 重設玩家本回合狀態
-            players.forEach(p => {
-                p.currentSubmittedTime = null;
-                p.isFailed = false;
-                p.diffSeconds = null;
-                p.justSubmitted = false;
-            });
-
-            isRoundActive = false;
-            document.getElementById('top-right-countdown').classList.add('hidden');
-            renderPlayersDashboard();
-
-            // 1. 宣告回合數 (停1秒)
-            showSplash(`第 ${currentRound} 回合`, "ROUND ANNOUNCEMENT", 1000, () => {
-                
-                // 隨機產生 5 ~ maxSeconds 題目 (整數)
-                targetSeconds = Math.floor(Math.random() * (maxSeconds - 5 + 1)) + 5;
-                
-                // 更新大螢幕題目
-                document.getElementById('game-round-title').innerText = `第 ${currentRound} 回合 / 共 ${totalRounds} 回合`;
-                document.getElementById('big-target-seconds').innerText = `${targetSeconds} 秒`;
-
-                // 2. 出題時大螢幕中央顯示秒數 (停1秒)
-                showSplash(`${targetSeconds} 秒`, `第 ${currentRound} 回合 題目目標`, 1000, () => {
-                    
-                    // 通知手機端題目
-                    players.forEach(p => {
-                        if (p.conn) {
-                            p.conn.send({
-                                type: 'ROUND_START',
-                                round: currentRound,
-                                targetSeconds: targetSeconds
-                            });
-                        }
-                    });
-
-                    // 3. 右上角開始數數 1, 2, 3 (時間為題目的 1/3)
-                    startTopRightCountdown(targetSeconds / 3, () => {
-                        // 數數結束，開始官方默默計時
-                        roundStartTime = Date.now();
-                        isRoundActive = true;
-                        document.getElementById('round-status-hint').innerText = "默數進行中，請搖晃手機傳送！";
-
-                        // 觸發 AI 答題
-                        triggerAISubmit();
-                    });
-                });
-            });
-        }
-
-        function showSplash(mainText, subText, duration, callback) {
-            const splash = document.getElementById('view-splash');
-            document.getElementById('splash-maintext').innerText = mainText;
-            document.getElementById('splash-subtext').innerText = subText;
-            splash.classList.remove('hidden');
-
-            setTimeout(() => {
-                splash.classList.add('hidden');
-                if (callback) callback();
-            }, duration);
-        }
-
-        function startTopRightCountdown(durationSec, callback) {
-            const countdownBox = document.getElementById('top-right-countdown');
-            const numText = document.getElementById('countdown-num-text');
-            countdownBox.classList.remove('hidden');
-
-            const stepDuration = (durationSec * 1000) / 3;
-            let currentNum = 1;
-            numText.innerText = currentNum;
-            playSingleNote(440, 0.15);
-
-            const interval = setInterval(() => {
-                currentNum++;
-                if (currentNum <= 3) {
-                    numText.innerText = currentNum;
-                    playSingleNote(440 + (currentNum * 80), 0.15);
-                } else {
-                    clearInterval(interval);
-                    countdownBox.classList.add('hidden');
-                    if (callback) callback();
-                }
-            }, stepDuration);
-        }
-
-        function handlePlayerSecondsSubmitted(playerId, submittedTime) {
-            if (!isRoundActive) return;
-
-            const p = players.find(x => x.id === playerId);
-            if (p && p.currentSubmittedTime === null) {
-                p.currentSubmittedTime = parseFloat(submittedTime.toFixed(2));
-                p.justSubmitted = true; // 觸發躍動動畫
-                
-                if (p.currentSubmittedTime > targetSeconds) {
-                    p.isFailed = true;
-                    p.diffSeconds = 999;
-                } else {
-                    p.isFailed = false;
-                    p.diffSeconds = parseFloat((targetSeconds - p.currentSubmittedTime).toFixed(2));
-                }
-
-                // 參賽者作答音效與躍動繪製
-                playSubmitPopSound();
-                renderPlayersDashboard();
-                
-                setTimeout(() => {
-                    p.justSubmitted = false;
-                }, 400);
-
-                checkAllSubmitted();
-            }
-        }
-
-        function triggerAISubmit() {
-            players.filter(p => p.isAI).forEach(ai => {
-                const offset = (Math.random() * 3) - 2; 
-                let aiSimulatedTime = Math.max(1, targetSeconds + offset);
-                aiSimulatedTime = parseFloat(aiSimulatedTime.toFixed(2));
-
-                const delayMs = aiSimulatedTime * 1000;
-
-                setTimeout(() => {
-                    if (isRoundActive && ai.currentSubmittedTime === null) {
-                        handlePlayerSecondsSubmitted(ai.id, aiSimulatedTime);
-                    }
-                }, delayMs);
-            });
-        }
-
-        function checkAllSubmitted() {
-            if (players.every(p => p.currentSubmittedTime !== null)) {
-                isRoundActive = false;
-                setTimeout(() => {
-                    evaluateRoundAndShowResult();
-                }, 1000);
-            }
-        }
-
-        function renderPlayersDashboard() {
-            const dashboard = document.getElementById('players-dashboard');
-            dashboard.innerHTML = '';
-
-            document.getElementById('game-total-players-badge').innerText = `${players.length} 人`;
-
-            const sortedPlayers = [...players].sort((a, b) => {
-                if (a.isFailed && !b.isFailed) return 1;
-                if (!a.isFailed && b.isFailed) return -1;
-                if (!a.isFailed && !b.isFailed) {
-                    if (a.diffSeconds !== b.diffSeconds) {
-                        return a.diffSeconds - b.diffSeconds;
-                    }
-                    return b.streak - a.streak;
-                }
-                return 0;
-            });
-
-            sortedPlayers.forEach((p, rank) => {
-                const card = document.createElement('div');
-                let borderClass = 'border-pink-200 bg-rose-50/60';
-                let statusBadge = '<span class="text-xs text-rose-400 font-bold">默數中...</span>';
-
-                if (p.currentSubmittedTime !== null) {
-                    if (p.isFailed) {
-                        borderClass = 'border-rose-300 bg-rose-100/80';
-                        statusBadge = `<span class="text-xs text-rose-500 font-black">失敗 (${p.currentSubmittedTime.toFixed(2)}s)</span>`;
-                    } else {
-                        borderClass = 'border-pink-400 bg-pink-100/90 shadow-sm';
-                        statusBadge = `<span class="text-xs text-rose-600 font-black">${p.currentSubmittedTime.toFixed(2)}s</span>`;
-                    }
-                }
-
-                // 若剛提交秒數，加入大螢幕躍動放大效果 (animate-pop)
-                const popAnimClass = p.justSubmitted ? 'animate-pop scale-105 transition-all' : '';
-
-                const streakText = p.streak > 0 ? ` 🔥${p.streak}連勝` : '';
-                const displayName = p.displayName || p.name;
-
-                card.className = `p-2.5 rounded-xl border-2 ${borderClass} ${popAnimClass} flex items-center justify-between transition-all duration-200 flex-shrink-0`;
-                card.innerHTML = `
-                    <div class="flex items-center gap-2.5 truncate max-w-[65%]">
-                        <span class="font-black text-rose-500 text-lg min-w-[28px] text-center">#${rank + 1}</span>
-                        <div class="flex flex-col truncate">
-                            <span class="font-black text-rose-800 text-base truncate leading-tight">${displayName}</span>
-                            <span class="text-xs font-bold text-rose-400 leading-tight">${streakText}</span>
-                        </div>
-                    </div>
-                    <div class="flex items-center gap-2.5 flex-shrink-0">
-                        ${statusBadge}
-                    </div>
-                `;
-                dashboard.appendChild(card);
-            });
-        }
-
-        function evaluateRoundAndShowResult() {
-            const validPlayers = players.filter(p => !p.isFailed).sort((a, b) => {
-                if (a.diffSeconds !== b.diffSeconds) return a.diffSeconds - b.diffSeconds;
-                return b.streak - a.streak;
-            });
-
-            let roundWinnerId = validPlayers.length > 0 ? validPlayers[0].id : null;
-
-            players.forEach(p => {
-                if (p.id === roundWinnerId) {
-                    p.streak += 1;
-                } else {
-                    p.streak = 0;
-                }
-                p.historyScores.push(p.isFailed ? 99 : p.diffSeconds);
-            });
-
-            const sorted = [...players].sort((a, b) => {
-                if (a.isFailed && !b.isFailed) return 1;
-                if (!a.isFailed && b.isFailed) return -1;
-                if (!a.isFailed && !b.isFailed) {
-                    if (a.diffSeconds !== b.diffSeconds) return a.diffSeconds - b.diffSeconds;
-                    return b.streak - a.streak;
-                }
-                return 0;
-            });
-
-            // 儲存此回合前三名資料供頒獎模式等分顯示
-            const top3List = sorted.slice(0, 3).map(p => ({
-                name: p.displayName || p.name,
-                time: p.isFailed ? '失敗' : `${p.currentSubmittedTime.toFixed(2)} 秒`,
-                diff: p.isFailed ? '--' : `差 ${p.diffSeconds.toFixed(2)}s`
-            }));
-
-            roundHistoryResults.push({
-                round: currentRound,
-                targetSeconds: targetSeconds,
-                top3: top3List
-            });
-
-            // 若為最後一回合，直接進入頒獎模式！
-            if (currentRound >= totalRounds) {
-                showAwardsCeremony();
-                return;
-            }
-
-            // 中間回合顯示該回合結算榜
-            document.getElementById('round-result-title').innerText = `🏆 第 ${currentRound} 回合 結算榜 🏆`;
-
-            const halfIndex = Math.ceil(sorted.length / 2);
-            const leftPlayers = sorted.slice(0, halfIndex);
-            const rightPlayers = sorted.slice(halfIndex);
-
-            document.getElementById('round-left-count').innerText = `${leftPlayers.length} 人`;
-            document.getElementById('round-right-count').innerText = `${rightPlayers.length} 人`;
-
-            renderParticipantList('round-left-list', leftPlayers, 1);
-            renderParticipantList('round-right-list', rightPlayers, halfIndex + 1);
-
-            const top3Container = document.getElementById('round-top3-container');
-            top3Container.innerHTML = '';
-
-            sorted.slice(0, 3).forEach((p, idx) => {
-                const card = document.createElement('div');
-                const timeText = p.isFailed ? '失敗' : `${p.currentSubmittedTime.toFixed(2)} 秒 (差 ${p.diffSeconds.toFixed(2)}s)`;
-                
-                card.className = `w-full max-w-md p-3.5 rounded-2xl border-2 border-pink-300 bg-white shadow-sm flex justify-between items-center px-6`;
-                card.innerHTML = `
-                    <div class="flex items-center gap-3">
-                        <span class="text-3xl">${idx === 0 ? '🥇' : idx === 1 ? '🥈' : '🥉'}</span>
-                        <div class="text-left">
-                            <span class="text-xs font-bold text-rose-400">第 ${idx + 1} 名</span>
-                            <div class="text-xl font-black text-rose-800">${p.displayName || p.name}</div>
-                        </div>
-                    </div>
-                    <div class="text-right">
-                        <div class="text-base font-black text-rose-600">${timeText}</div>
-                        <div class="text-xs text-rose-400 font-bold">連勝: ${p.streak}</div>
-                    </div>
-                `;
-                top3Container.appendChild(card);
-            });
-
-            document.getElementById('view-round-result').classList.remove('hidden');
-        }
-
-        function renderParticipantList(elementId, playerGroup, startIndex = 1) {
-            const container = document.getElementById(elementId);
-            container.innerHTML = '';
-            playerGroup.forEach((p, idx) => {
-                const rankNum = startIndex + idx;
-                const item = document.createElement('div');
-                const displaySec = p.isFailed ? '失敗' : `${p.currentSubmittedTime.toFixed(2)}s`;
-                
-                item.className = 'flex items-center justify-between p-2 bg-white rounded-xl border border-pink-200 text-xs gap-1 shadow-sm';
-                item.innerHTML = `
-                    <div class="flex items-center gap-1.5 truncate">
-                        <span class="font-bold text-pink-400 w-5 flex-shrink-0">#${rankNum}</span>
-                        <span class="font-bold text-rose-800 truncate">${p.displayName || p.name}</span>
-                    </div>
-                    <div class="text-right flex-shrink-0 font-black text-rose-600">
-                        ${displaySec}
-                    </div>
-                `;
-                container.appendChild(item);
-            });
-        }
-
-        document.getElementById('btn-next-round').addEventListener('click', () => {
-            document.getElementById('view-round-result').classList.add('hidden');
-            currentRound++;
-            startRoundFlow();
-        });
-
-        // 直接進入頒獎模式（全螢幕煙花與音效連放8秒、每回合前三名等分顯示）
-        function showAwardsCeremony() {
-            stopHeartbeatLoop(); // 停止心跳聲
-
-            document.getElementById('view-game').classList.add('hidden');
-            document.getElementById('view-round-result').classList.add('hidden');
-            document.getElementById('view-final-result').classList.remove('hidden');
-
-            // 通知手機端比賽結束
-            players.forEach(p => {
-                if (p.conn) {
-                    p.conn.send({
-                        type: 'FINAL_RESULT',
-                        rank: 1,
-                        totalPlayers: players.length
-                    });
-                }
-            });
-
-            // 渲染全螢幕等分顯示網格
-            const awardsGrid = document.getElementById('rounds-awards-grid');
-            awardsGrid.innerHTML = '';
-
-            // 依據回合數自動計算 Grid 欄位數 (等分大螢幕)
-            const roundCount = roundHistoryResults.length;
-            if (roundCount === 1) {
-                awardsGrid.className = "grid grid-cols-1 gap-6 flex-grow overflow-y-auto my-2 p-2 w-full items-center max-w-2xl mx-auto";
-            } else if (roundCount === 2) {
-                awardsGrid.className = "grid grid-cols-1 md:grid-cols-2 gap-6 flex-grow overflow-y-auto my-2 p-2 w-full items-center";
-            } else if (roundCount === 3) {
-                awardsGrid.className = "grid grid-cols-1 md:grid-cols-3 gap-6 flex-grow overflow-y-auto my-2 p-2 w-full items-center";
-            } else {
-                awardsGrid.className = `grid grid-cols-1 md:grid-cols-2 lg:grid-cols-${Math.min(roundCount, 5)} gap-4 flex-grow overflow-y-auto my-2 p-2 w-full items-center`;
-            }
-
-            roundHistoryResults.forEach((rh) => {
-                const roundCard = document.createElement('div');
-                roundCard.className = "bg-rose-50/80 border-2 border-pink-300 rounded-3xl p-5 shadow-lg flex flex-col h-full justify-between items-center text-center backdrop-blur-sm";
-                
-                let top3Html = '';
-                rh.top3.forEach((t, i) => {
-                    const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉';
-                    const bgHighlight = i === 0 ? 'bg-amber-100/80 border-amber-300' : 'bg-white border-pink-200';
-                    top3Html += `
-                        <div class="w-full flex items-center justify-between p-3 rounded-2xl border ${bgHighlight} shadow-sm my-1">
-                            <div class="flex items-center gap-2">
-                                <span class="text-2xl">${medal}</span>
-                                <span class="font-black text-rose-800 text-lg truncate max-w-[120px]">${t.name}</span>
-                            </div>
-                            <div class="text-right">
-                                <div class="font-black text-rose-600 text-sm">${t.time}</div>
-                                <div class="text-[10px] text-rose-400 font-bold">${t.diff}</div>
-                            </div>
-                        </div>
-                    `;
-                });
-
-                roundCard.innerHTML = `
-                    <div class="w-full border-b border-pink-200 pb-3 mb-2 flex-shrink-0">
-                        <span class="text-xs bg-pink-200 text-rose-700 px-3 py-1 rounded-full font-extrabold border border-pink-300">ROUND ${rh.round}</span>
-                        <h3 class="text-2xl font-black text-rose-700 mt-2">第 ${rh.round} 回合</h3>
-                        <p class="text-rose-500 font-bold text-sm">題目：${rh.targetSeconds} 秒</p>
-                    </div>
-                    <div class="w-full flex-grow flex flex-col justify-center space-y-2">
-                        ${top3Html}
-                    </div>
-                `;
-                awardsGrid.appendChild(roundCard);
-            });
-
-            // 💥 全螢幕煙花與瑪莉歐勝利音樂 💥
-            playMarioVictoryFanfare();
-
-            // 煙花特效（持續發射禮花與彩帶）
-            const duration = 8 * 1000;
-            const animationEnd = Date.now() + duration;
-
-            const interval = setInterval(function() {
-                const timeLeft = animationEnd - Date.now();
-
-                if (timeLeft <= 0) {
-                    return clearInterval(interval);
-                }
-
-                const particleCount = 50 * (timeLeft / duration);
-
-                confetti({
-                    particleCount: particleCount,
-                    spread: 360,
-                    startVelocity: 30,
-                    origin: { x: Math.random(), y: Math.random() * 0.6 + 0.1 }
-                });
-                confetti({
-                    particleCount: particleCount,
-                    angle: 60,
-                    spread: 55,
-                    origin: { x: 0, y: 0.7 }
-                });
-                confetti({
-                    particleCount: particleCount,
-                    angle: 120,
-                    spread: 55,
-                    origin: { x: 1, y: 0.7 }
-                });
-            }, 250);
-        }
-
-        // ================= 手機端控制器邏輯 =================
         function initMobileController(hostId) {
             peer = new Peer();
             peer.on('open', (id) => {
@@ -1072,83 +639,146 @@
                 });
 
                 hostConn.on('data', (data) => {
-                    if (data.type === 'GAME_START') {
-                        document.getElementById('mobile-status-text').innerText = '🎮 比賽開始，請看大螢幕！';
-                    } else if (data.type === 'ROUND_START') {
-                        setupMobileRoundUI(data.round, data.targetSeconds);
+                    if (data.type === 'ASSIGN_AVATAR') {
+                        myAvatar = data.avatar;
+                        const avatarEl = document.getElementById('mobile-avatar-display');
+                        avatarEl.innerText = myAvatar;
+                        avatarEl.classList.remove('hidden');
+                    } else if (data.type === 'GAME_START') {
+                        document.getElementById('mobile-status-text').innerText = '🎮 遊戲開始！使用指尖滑動或傾斜手機操控移動！';
+                        document.getElementById('mobile-controls').classList.remove('hidden');
+                        document.getElementById('mobile-controls').classList.add('flex');
+                        startOrientationListener();
+                        initTouchpadControls();
                     } else if (data.type === 'FINAL_RESULT') {
-                        showMobileFinalResult(data.rank, data.totalPlayers);
+                        showMobileFinalResult(data.rank, data.score, data.totalPlayers);
                     }
                 });
             });
 
-            initShakeSensor();
-        }
+            document.getElementById('btn-recalibrate').addEventListener('click', () => {
+                zeroGamma = currentGamma;
+                zeroBeta = currentBeta;
+            });
 
-        let mobileRoundStartTime = 0;
-        let hasSubmittedMobile = false;
-
-        function setupMobileRoundUI(roundNum, targetSec) {
-            hasSubmittedMobile = false;
-            document.getElementById('mobile-join-form').classList.add('hidden');
-            document.getElementById('mobile-game-panel').classList.remove('hidden');
-            document.getElementById('mobile-game-panel').classList.add('flex');
-
-            document.getElementById('m-disp-round').innerText = `第 ${roundNum} 回合`;
-            document.getElementById('m-disp-target').innerText = `${targetSec} 秒`;
-            document.getElementById('m-disp-current').innerText = "-- 秒";
-            document.getElementById('mobile-status-text').innerText = "⏱️ 請在心裡默數，達到秒數時搖晃手機傳送！";
-
-            mobileRoundStartTime = Date.now();
-        }
-
-        function triggerMobileSubmit() {
-            if (hasSubmittedMobile || !hostConn) return;
-            hasSubmittedMobile = true;
-
-            const finalSubmitted = (Date.now() - mobileRoundStartTime) / 1000;
-            document.getElementById('m-disp-current').innerText = `${finalSubmitted.toFixed(2)} 秒`;
-            document.getElementById('mobile-status-text').innerText = "✓ 秒數已成功傳送至大螢幕！";
-
-            hostConn.send({
-                type: 'SUBMIT_SECONDS',
-                playerId: myPlayerId,
-                submittedTime: finalSubmitted
+            document.getElementById('select-sensitivity').addEventListener('change', (e) => {
+                sensitivityMultiplier = parseFloat(e.target.value) || 1.0;
             });
         }
 
-        function initShakeSensor() {
-            document.getElementById('btn-mobile-shake-fallback').addEventListener('click', () => {
-                triggerMobileSubmit();
-            });
+        function initTouchpadControls() {
+            const touchpad = document.getElementById('touchpad-area');
+            const pointer = document.getElementById('touch-pointer');
+            const hint = document.getElementById('touchpad-hint');
 
-            if (window.DeviceMotionEvent) {
-                window.addEventListener('devicemotion', (e) => {
-                    if (hasSubmittedMobile) return;
-                    const acc = e.accelerationIncludingGravity;
-                    if (!acc) return;
+            let isTouching = false;
+            let lastTouchX = 0;
+            let lastTouchY = 0;
 
-                    const curTime = Date.now();
-                    if ((curTime - lastShakeTime) > 100) {
-                        const diffTime = curTime - lastShakeTime;
-                        lastShakeTime = curTime;
+            const handleStart = (clientX, clientY) => {
+                isTouching = true;
+                lastTouchX = clientX;
+                lastTouchY = clientY;
+                if (hint) hint.classList.add('hidden');
+                updatePointerPosition(clientX, clientY);
+            };
 
-                        if (lastX !== null) {
-                            const deltaX = Math.abs(acc.x - lastX);
-                            const deltaY = Math.abs(acc.y - lastY);
-                            const deltaZ = Math.abs(acc.z - lastZ);
+            const handleMove = (clientX, clientY) => {
+                if (!isTouching) return;
 
-                            const speed = (deltaX + deltaY + deltaZ) / diffTime * 10000;
-                            if (speed > 800) { // 搖晃閥值
-                                triggerMobileSubmit();
-                            }
-                        }
+                const deltaX = (clientX - lastTouchX) * 0.002 * sensitivityMultiplier;
+                const deltaY = (clientY - lastTouchY) * 0.002 * sensitivityMultiplier;
 
-                        lastX = acc.x;
-                        lastY = acc.y;
-                        lastZ = acc.z;
+                lastTouchX = clientX;
+                lastTouchY = clientY;
+
+                updatePointerPosition(clientX, clientY);
+
+                if (hostConn && hostConn.open && (Math.abs(deltaX) > 0.0001 || Math.abs(deltaY) > 0.0001)) {
+                    hostConn.send({
+                        type: 'TILT',
+                        playerId: myPlayerId,
+                        deltaX: deltaX,
+                        deltaY: deltaY
+                    });
+                }
+            };
+
+            const handleEnd = () => {
+                isTouching = false;
+                if (pointer) {
+                    pointer.style.left = '50%';
+                    pointer.style.top = '50%';
+                }
+            };
+
+            const updatePointerPosition = (clientX, clientY) => {
+                if (!touchpad || !pointer) return;
+                const rect = touchpad.getBoundingClientRect();
+                const x = Math.max(0, Math.min(rect.width, clientX - rect.left));
+                const y = Math.max(0, Math.min(rect.height, clientY - rect.top));
+                pointer.style.left = `${x}px`;
+                pointer.style.top = `${y}px`;
+            };
+
+            touchpad.addEventListener('touchstart', (e) => {
+                if (e.touches.length > 0) handleStart(e.touches[0].clientX, e.touches[0].clientY);
+            }, { passive: true });
+
+            touchpad.addEventListener('touchmove', (e) => {
+                if (e.touches.length > 0) handleMove(e.touches[0].clientX, e.touches[0].clientY);
+            }, { passive: true });
+
+            touchpad.addEventListener('touchend', handleEnd, { passive: true });
+
+            touchpad.addEventListener('mousedown', (e) => handleStart(e.clientX, e.clientY));
+            window.addEventListener('mousemove', (e) => handleMove(e.clientX, e.clientY));
+            window.addEventListener('mouseup', handleEnd);
+        }
+
+        let currentGamma = 0;
+        let currentBeta = 0;
+
+        function startOrientationListener() {
+            if (isOrientationBound) return;
+
+            const handleOrientation = (e) => {
+                let gamma = e.gamma || 0; 
+                let beta = e.beta || 0;   
+
+                currentGamma = gamma;
+                currentBeta = beta;
+
+                const relativeGamma = Math.max(-30, Math.min(30, gamma - zeroGamma));
+                const relativeBeta = Math.max(-30, Math.min(30, beta - zeroBeta));
+                
+                const angleText = document.getElementById('tilt-angle-text');
+                if (angleText) {
+                    angleText.innerText = `${Math.round(relativeGamma)}°, ${Math.round(relativeBeta)}°`;
+                }
+
+                if (hostConn && hostConn.open && (Math.abs(relativeGamma) > 2 || Math.abs(relativeBeta) > 2)) {
+                    const deltaX = (relativeGamma / 30) * 0.025 * sensitivityMultiplier;
+                    const deltaY = (relativeBeta / 30) * 0.025 * sensitivityMultiplier;
+                    hostConn.send({ 
+                        type: 'TILT', 
+                        playerId: myPlayerId, 
+                        deltaX: deltaX,
+                        deltaY: deltaY 
+                    });
+                }
+            };
+
+            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+                DeviceOrientationEvent.requestPermission().then(response => {
+                    if (response === 'granted') {
+                        window.addEventListener('deviceorientation', handleOrientation);
+                        isOrientationBound = true;
                     }
-                }, false);
+                }).catch(console.error);
+            } else {
+                window.addEventListener('deviceorientation', handleOrientation);
+                isOrientationBound = true;
             }
         }
 
@@ -1156,23 +786,520 @@
             const name = document.getElementById('mobile-name-input').value.trim();
             if (!name) return alert('請輸入暱稱！');
 
+            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+                DeviceOrientationEvent.requestPermission().catch(() => {});
+            }
+
             if (hostConn && hostConn.open) {
                 hostConn.send({ type: 'JOIN', name: name, playerId: myPlayerId });
                 document.getElementById('player-mobile-name').innerText = `玩家：${name}`;
-                document.getElementById('m-disp-name').innerText = name;
                 document.getElementById('mobile-join-form').classList.add('hidden');
-                document.getElementById('mobile-status-text').innerText = '已成功登錄，等待比賽開始...';
+                document.getElementById('mobile-status-text').innerText = '已成功進入大廳，等待開賽...';
             }
         });
 
-        function showMobileFinalResult(rank, totalPlayers) {
-            document.getElementById('mobile-game-panel').classList.add('hidden');
+        function showMobileFinalResult(rank, score, totalPlayers) {
+            document.getElementById('mobile-top-bar').classList.add('hidden');
+            document.getElementById('mobile-controls').classList.add('hidden');
+            document.getElementById('mobile-status-text').classList.add('hidden');
+
             const resultBox = document.getElementById('mobile-final-result');
             resultBox.classList.remove('hidden');
             resultBox.classList.add('flex');
 
-            document.getElementById('mobile-result-rank').innerText = `挑戰完成！`;
-            document.getElementById('mobile-result-total').innerText = `請看大螢幕精彩頒獎`;
+            document.getElementById('mobile-result-rank').innerText = `第 ${rank} 名`;
+            document.getElementById('mobile-result-total').innerText = `共 ${totalPlayers} 人`;
+            document.getElementById('mobile-result-score').innerText = score;
+
+            const iconEl = document.getElementById('mobile-result-icon');
+            const statusEl = document.getElementById('mobile-result-status');
+
+            if (rank === 1) {
+                iconEl.innerText = '🥇';
+                statusEl.innerText = '🎉 恭喜榮獲 全場總冠軍！';
+            } else if (rank === 2) {
+                iconEl.innerText = '🥈';
+                statusEl.innerText = '✨ 恭喜榮獲 亞軍殊榮！';
+            } else if (rank === 3) {
+                iconEl.innerText = '🥉';
+                statusEl.innerText = '👏 恭喜榮獲 季軍佳績！';
+            } else {
+                iconEl.innerText = '🏅';
+                statusEl.innerText = `感謝您的參與！表現相當精彩！`;
+            }
+        }
+
+        function getRandomAvatar() {
+            return animalAvatars[Math.floor(Math.random() * animalAvatars.length)];
+        }
+
+        function addPlayer(name, conn, playerId) {
+            if (players.some(p => p.id === playerId)) return;
+
+            const assignedAvatar = getRandomAvatar();
+
+            const p = {
+                id: playerId,
+                name: name,
+                displayName: name,
+                avatar: assignedAvatar,
+                conn: conn,
+                isAI: false,
+                score: 0,
+                x: 0.1 + Math.random() * 0.8,
+                y: 0.88                       
+            };
+            players.push(p);
+
+            if (conn) {
+                conn.send({ type: 'ASSIGN_AVATAR', avatar: assignedAvatar });
+            }
+
+            renderLobbyPlayers();
+
+            if (players.length >= 1) {
+                document.getElementById('btn-start-game').classList.remove('hidden');
+            }
+        }
+
+        document.getElementById('btn-start-game').addEventListener('click', () => {
+            finalizePlayersAndStart();
+        });
+
+        function finalizePlayersAndStart() {
+            totalFoodToSpawn = parseInt(document.getElementById('select-food-count').value, 10);
+            foodDropSpeed = parseFloat(document.getElementById('select-drop-speed').value);
+            const aiToAddCount = parseInt(document.getElementById('select-ai-count').value, 10);
+
+            const aiNames = ['🤖 智慧小安', '🤖 助人小傑'];
+
+            for (let i = 0; i < aiToAddCount; i++) {
+                const aiAvatar = getRandomAvatar();
+                players.push({
+                    id: 'ai_' + Date.now() + '_' + i,
+                    name: aiNames[i] || `🤖 AI助手${i+1}`,
+                    displayName: aiNames[i] || `🤖 AI助手${i+1}`,
+                    avatar: aiAvatar,
+                    conn: null,
+                    isAI: true,
+                    score: 0,
+                    x: 0.3 + (i * 0.4),
+                    y: 0.88
+                });
+            }
+
+            renderLobbyPlayers();
+
+            // 按開始遊戲後播放台語歌曲「心花開」
+            const bgm = document.getElementById('bgm');
+            getAudioContext();
+            if (bgm) {
+                bgm.play().catch(e => console.log("Audio play blocked", e));
+            }
+
+            startGame();
+        }
+
+        function renderLobbyPlayers() {
+            const container = document.getElementById('player-list-lobby');
+            container.innerHTML = '';
+            document.getElementById('player-count-badge').innerText = `${players.length} 人`;
+
+            players.forEach(p => {
+                const item = document.createElement('div');
+                item.className = 'flex justify-between items-center bg-white p-2.5 rounded-xl border border-amber-200 text-sm shadow-sm';
+                item.innerHTML = `
+                    <div class="flex items-center gap-2 truncate">
+                        <span class="text-2xl">${p.avatar}</span>
+                        <span class="font-bold text-slate-700 truncate">${p.displayName || p.name}</span>
+                    </div>
+                    <span class="text-[10px] ${p.isAI ? 'bg-amber-100 text-amber-800 border-amber-300' : 'bg-emerald-100 text-emerald-800 border-emerald-300'} px-2 py-0.5 rounded font-bold border flex-shrink-0">
+                        ${p.isAI ? 'AI' : '連線'}
+                    </span>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        function startGame() {
+            document.getElementById('view-lobby').classList.add('hidden');
+            document.getElementById('main-header').classList.add('hidden');
+            document.getElementById('main-footer').classList.add('hidden');
+
+            document.getElementById('view-game').classList.remove('hidden');
+            document.getElementById('view-game').classList.add('grid');
+
+            canvas = document.getElementById('gameCanvas');
+            ctx = canvas.getContext('2d');
+            resizeCanvas();
+
+            players.forEach(p => { if (p.conn) p.conn.send({ type: 'GAME_START' }); });
+
+            spawnedFoodCount = 0;
+            activeFoods = [];
+            scorePopups = [];
+            explosionParticles = [];
+            isGameRunning = true;
+
+            requestAnimationFrame(gameLoop);
+            spawnFoodInterval();
+        }
+
+        function resizeCanvas() {
+            if (!canvas) return;
+            canvas.width = canvas.parentElement.clientWidth;
+            canvas.height = canvas.parentElement.clientHeight;
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+
+        function spawnFoodInterval() {
+            if (!isGameRunning) return;
+
+            if (spawnedFoodCount < totalFoodToSpawn) {
+                const isGood = Math.random() < 0.7;
+                const pool = isGood ? validFoodPool : invalidFoodPool;
+                const foodItem = pool[Math.floor(Math.random() * pool.length)];
+
+                // 隨機某個食物加快 20%-100%
+                let speedBoostLevel = 0;
+                let speedMultiplier = 1.0;
+                if (Math.random() < 0.35) { // 約 35% 機率觸發加速食物
+                    speedBoostLevel = Math.floor(Math.random() * 5) + 1; // 1: 20%, 2: 40%, 3: 60%, 4: 80%, 5: 100%
+                    speedMultiplier = 1 + (speedBoostLevel * 0.2);
+                }
+
+                // 每加快 20%，分數加倍計算
+                let finalScore = foodItem.score;
+                if (speedBoostLevel > 0) {
+                    finalScore = foodItem.score * Math.pow(2, speedBoostLevel);
+                }
+
+                const baseSpeed = (0.003 + Math.random() * 0.002) * (foodDropSpeed / 3.5);
+
+                activeFoods.push({
+                    id: Date.now() + '_' + Math.random(),
+                    name: foodItem.name,
+                    icon: foodItem.icon,
+                    score: finalScore,
+                    isGood: isGood,
+                    speedBoostLevel: speedBoostLevel,
+                    x: 0.05 + Math.random() * 0.9,
+                    y: 0,
+                    speed: baseSpeed * speedMultiplier
+                });
+
+                spawnedFoodCount++;
+                document.getElementById('remaining-food-badge').innerText = `🍎 剩餘物資：${totalFoodToSpawn - spawnedFoodCount}/${totalFoodToSpawn}`;
+
+                const nextInterval = 1000 + Math.random() * 1500;
+                setTimeout(spawnFoodInterval, nextInterval);
+            }
+        }
+
+        function gameLoop() {
+            if (!isGameRunning) return;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // 更新 AI 位置
+            players.filter(p => p.isAI).forEach(ai => {
+                const goodFoods = activeFoods.filter(f => f.score > 0);
+                if (goodFoods.length > 0) {
+                    const target = goodFoods[0];
+                    if (ai.x < target.x) ai.x += 0.003;
+                    if (ai.x > target.x) ai.x -= 0.003;
+                    if (ai.y < target.y) ai.y += 0.003;
+                    if (ai.y > target.y) ai.y -= 0.003;
+                }
+            });
+
+            // 繪製與更新食物
+            for (let i = activeFoods.length - 1; i >= 0; i--) {
+                const food = activeFoods[i];
+                food.y += food.speed;
+
+                const drawX = food.x * canvas.width;
+                const drawY = food.y * canvas.height;
+
+                // 若為加速食物，畫出火花裝飾
+                if (food.speedBoostLevel > 0) {
+                    ctx.font = '18px sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('⚡', drawX - 25, drawY - 15);
+                }
+
+                // 繪製食物圖示與名稱
+                ctx.font = '43px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(food.icon, drawX, drawY);
+
+                ctx.font = 'bold 14px "Noto Sans TC"';
+                ctx.fillStyle = food.score > 0 ? '#15803d' : '#e11d48';
+                ctx.fillText(food.name, drawX, drawY + 24);
+
+                // 檢測是否碰撞玩家
+                players.forEach(p => {
+                    const playerX = p.x * canvas.width;
+                    const playerY = p.y * canvas.height;
+                    const distX = Math.abs(drawX - playerX);
+                    const distY = Math.abs(drawY - playerY);
+
+                    if (distX < 45 && distY < 45) {
+                        p.score += food.score;
+
+                        if (food.score > 0) {
+                            // 正確食物音效與躍動文字效果
+                            playScoreSound();
+                            scorePopups.push({
+                                text: `+${food.score}`,
+                                x: drawX,
+                                y: drawY - 10,
+                                alpha: 1.0,
+                                scale: food.speedBoostLevel > 0 ? 2.0 : 1.5,
+                                color: food.speedBoostLevel > 0 ? '#ea580c' : '#f59e0b'
+                            });
+                        } else {
+                            // 不能放進去的食物：觸發爆炸特效與音效
+                            playExplosionSound();
+                            createExplosion(drawX, drawY);
+                            scorePopups.push({
+                                text: `${food.score}`,
+                                x: drawX,
+                                y: drawY - 10,
+                                alpha: 1.0,
+                                scale: 1.6,
+                                color: '#f43f5e'
+                            });
+                        }
+
+                        activeFoods.splice(i, 1);
+                    }
+                });
+
+                if (activeFoods[i] && food.y > 1.05) {
+                    activeFoods.splice(i, 1);
+                }
+            }
+
+            // 繪製與更新爆炸粒子特效
+            for (let i = explosionParticles.length - 1; i >= 0; i--) {
+                const p = explosionParticles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.alpha -= p.decay;
+
+                ctx.save();
+                ctx.globalAlpha = Math.max(0, p.alpha);
+                ctx.fillStyle = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+
+                if (p.alpha <= 0) {
+                    explosionParticles.splice(i, 1);
+                }
+            }
+
+            // 繪製得分飄浮特效
+            for (let i = scorePopups.length - 1; i >= 0; i--) {
+                const pop = scorePopups[i];
+                pop.y -= 1.5;
+                pop.alpha -= 0.025;
+                if (pop.scale > 1.0) pop.scale -= 0.02;
+
+                ctx.save();
+                ctx.globalAlpha = Math.max(0, pop.alpha);
+                ctx.font = `900 ${Math.round(28 * pop.scale)}px "Noto Sans TC"`;
+                ctx.fillStyle = pop.color;
+                ctx.textAlign = 'center';
+                ctx.shadowColor = 'rgba(0,0,0,0.3)';
+                ctx.shadowBlur = 6;
+                ctx.fillText(pop.text, pop.x, pop.y);
+                ctx.restore();
+
+                if (pop.alpha <= 0) {
+                    scorePopups.splice(i, 1);
+                }
+            }
+
+            // 繪製玩家角色
+            players.forEach(p => {
+                const px = p.x * canvas.width;
+                const py = p.y * canvas.height;
+
+                ctx.font = '52px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(p.avatar, px, py);
+
+                ctx.font = 'bold 16px "Noto Sans TC"';
+                ctx.fillStyle = '#1e293b';
+                ctx.fillText(p.displayName || p.name, px, py + 25);
+
+                ctx.font = '900 14px "Noto Sans TC"';
+                ctx.fillStyle = '#d97706';
+                ctx.fillText(`${p.score} 分`, px, py + 45);
+            });
+
+            renderPlayersDashboard();
+
+            // 檢查遊戲結束條件
+            if (spawnedFoodCount >= totalFoodToSpawn && activeFoods.length === 0) {
+                isGameRunning = false;
+                setTimeout(showFinalResult, 1500);
+            } else {
+                requestAnimationFrame(gameLoop);
+            }
+        }
+
+        function renderPlayersDashboard() {
+            const dashboard = document.getElementById('players-dashboard');
+            dashboard.innerHTML = '';
+
+            document.getElementById('game-total-players-badge').innerText = `${players.length} 人`;
+
+            const sortedPlayers = [...players].sort((a, b) => b.score - a.score);
+            
+            sortedPlayers.forEach((p, rank) => {
+                const card = document.createElement('div');
+                const displayName = p.displayName || p.name;
+
+                card.className = `p-2.5 md:p-3 rounded-2xl border border-amber-200 bg-white/90 flex items-center justify-between transition-all duration-200 flex-shrink-0 shadow-sm`;
+                card.innerHTML = `
+                    <div class="flex items-center gap-2.5 truncate max-w-[65%]">
+                        <span class="font-black text-emerald-700 text-lg md:text-xl min-w-[30px] text-center">#${rank + 1}</span>
+                        <span class="text-2xl flex-shrink-0">${p.avatar}</span>
+                        <span class="font-black text-slate-800 text-xl md:text-2xl truncate tracking-wide leading-tight">${displayName}</span>
+                    </div>
+                    <div class="flex items-center gap-2.5 flex-shrink-0">
+                        <span class="text-amber-600 font-black text-xl md:text-2xl">${p.score} 分</span>
+                    </div>
+                `;
+                dashboard.appendChild(card);
+            });
+        }
+
+        function renderParticipantList(elementId, playerGroup, startIndex = 1) {
+            const container = document.getElementById(elementId);
+            container.innerHTML = '';
+            playerGroup.forEach((p, idx) => {
+                const rankNum = startIndex + idx;
+                const item = document.createElement('div');
+                item.className = 'flex flex-col p-2.5 bg-white rounded-xl border border-amber-200 text-sm gap-1 shadow-sm';
+                item.innerHTML = `
+                    <div class="flex items-center gap-2 truncate w-full">
+                        <span class="font-bold text-amber-800 text-xs w-6 flex-shrink-0">#${rankNum}</span>
+                        <span class="text-xl">${p.avatar}</span>
+                        <span class="font-bold text-slate-700 truncate">${p.name}</span>
+                    </div>
+                    <div class="text-right w-full pl-8">
+                        <span class="font-black text-amber-600">${p.score} 分</span>
+                    </div>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        function showFinalResult() {
+            // 暫停主背景音樂「心花開」並播放問答遊戲頒獎音樂
+            const bgm = document.getElementById('bgm');
+            if (bgm) {
+                bgm.pause();
+                bgm.currentTime = 0;
+            }
+            playMarioVictoryFanfare();
+
+            document.getElementById('view-game').classList.add('hidden');
+            document.getElementById('view-result').classList.remove('hidden');
+
+            const allSortedPlayers = [...players].sort((a, b) => b.score - a.score);
+
+            players.forEach(p => {
+                if (p.conn) {
+                    const rank = allSortedPlayers.findIndex(s => s.id === p.id) + 1;
+                    p.conn.send({
+                        type: 'FINAL_RESULT',
+                        rank: rank,
+                        score: p.score,
+                        totalPlayers: allSortedPlayers.length
+                    });
+                }
+            });
+
+            const halfIndex = Math.ceil(allSortedPlayers.length / 2);
+            const leftPlayers = allSortedPlayers.slice(0, halfIndex);
+            const rightPlayers = allSortedPlayers.slice(halfIndex);
+
+            document.getElementById('result-left-count').innerText = `${leftPlayers.length} 人`;
+            document.getElementById('result-right-count').innerText = `${rightPlayers.length} 人`;
+
+            renderParticipantList('result-left-list', leftPlayers, 1);
+            renderParticipantList('result-right-list', rightPlayers, halfIndex + 1);
+
+            const top3Container = document.getElementById('top3-container');
+            top3Container.innerHTML = '';
+
+            const top3 = allSortedPlayers.slice(0, 3);
+            const medals = ['🥇 第一名 冠軍', '🥈 第二名 亞軍', '🥉 第三名 季軍'];
+            const colors = ['border-amber-400 bg-amber-100/80 shadow-md', 'border-slate-300 bg-slate-100/80', 'border-orange-300 bg-orange-100/80'];
+
+            top3.forEach((p, idx) => {
+                const card = document.createElement('div');
+                
+                if (idx === 0) {
+                    card.className = `w-full max-w-md p-5 rounded-3xl border-4 ${colors[idx]} flex flex-col items-center justify-center my-1`;
+                    card.innerHTML = `
+                        <span class="text-sm font-black text-amber-900 bg-amber-200 px-4 py-1 rounded-full border border-amber-400 mb-1">👑 春日冠軍王座 👑</span>
+                        <div class="text-6xl my-1">${p.avatar}</div>
+                        <div class="text-3xl font-black text-slate-800 tracking-wide text-center">${p.name}</div>
+                        <div class="text-2xl font-black text-amber-600 mt-2">${p.score} 分</div>
+                    `;
+                } else {
+                    card.className = `w-full max-w-md p-4 rounded-2xl border-2 ${colors[idx]} flex justify-between items-center px-6`;
+                    card.innerHTML = `
+                        <div class="flex items-center gap-4">
+                            <span class="text-4xl">${p.avatar}</span>
+                            <div class="text-left">
+                                <span class="text-xs font-bold text-slate-500">${medals[idx]}</span>
+                                <div class="text-2xl font-black text-slate-800">${p.name}</div>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-xl font-black text-amber-600">${p.score} 分</div>
+                        </div>
+                    `;
+                }
+                top3Container.appendChild(card);
+            });
+
+            launch8SecFireworks();
+        }
+
+        function launch8SecFireworks() {
+            const duration = 8 * 1000;
+            const animationEnd = Date.now() + duration;
+
+            const interval = setInterval(() => {
+                const timeLeft = animationEnd - Date.now();
+
+                if (timeLeft <= 0) {
+                    return clearInterval(interval);
+                }
+
+                playFireworkBoomSound();
+
+                confetti({
+                    particleCount: 40,
+                    startVelocity: 30,
+                    spread: 360,
+                    ticks: 60,
+                    origin: {
+                        x: Math.random(),
+                        y: Math.random() * 0.6 + 0.1
+                    }
+                });
+            }, 350);
         }
     </script>
 </body>
