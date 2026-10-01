@@ -798,6 +798,18 @@
         }
 
         document.getElementById('btn-start-game').addEventListener('click', () => {
+            // 按下開始遊戲按鈕時，必定播放台語歌曲「心花開」
+            const bgm = document.getElementById('bgm');
+            getAudioContext(); // 確保 Web Audio / HTML Audio 順利解鎖
+            if (bgm) {
+                bgm.currentTime = 0;
+                bgm.play().then(() => {
+                    console.log("背景音樂『心花開』播放成功");
+                }).catch(e => {
+                    console.warn("背景音樂播放攔截修復：", e);
+                });
+            }
+
             finalizePlayersAndStart();
         });
 
@@ -824,14 +836,6 @@
             }
 
             renderLobbyPlayers();
-
-            // 按開始遊戲後播放台語歌曲「心花開」
-            const bgm = document.getElementById('bgm');
-            getAudioContext();
-            if (bgm) {
-                bgm.play().catch(e => console.log("Audio play blocked", e));
-            }
-
             startGame();
         }
 
@@ -957,30 +961,47 @@
                 const drawX = food.x * canvas.width;
                 const drawY = food.y * canvas.height;
 
-                // 若為加速食物，畫出火花裝飾
+                ctx.save();
+                ctx.translate(drawX, drawY);
+
+                // 速度加快的食物，按比例變小（每多一級加速縮小 12%，最大縮小至約 40% 大小）
+                let scaleFactor = 1.0;
                 if (food.speedBoostLevel > 0) {
-                    ctx.font = '18px sans-serif';
+                    scaleFactor = Math.max(0.4, 1.0 - (food.speedBoostLevel * 0.12));
+                    ctx.scale(scaleFactor, scaleFactor);
+                }
+
+                // 加大速度食物外圍的閃電符號 ⚡
+                if (food.speedBoostLevel > 0) {
+                    ctx.font = 'bold 30px sans-serif';
                     ctx.textAlign = 'center';
-                    ctx.fillText('⚡', drawX - 25, drawY - 15);
+                    ctx.shadowColor = '#f59e0b';
+                    ctx.shadowBlur = 10;
+                    ctx.fillText('⚡', -28, -20);
+                    ctx.fillText('⚡', 28, -20);
+                    ctx.shadowBlur = 0; // 重置發光效果
                 }
 
                 // 繪製食物圖示與名稱
                 ctx.font = '43px sans-serif';
                 ctx.textAlign = 'center';
-                ctx.fillText(food.icon, drawX, drawY);
+                ctx.fillText(food.icon, 0, 0);
 
                 ctx.font = 'bold 14px "Noto Sans TC"';
                 ctx.fillStyle = food.score > 0 ? '#15803d' : '#e11d48';
-                ctx.fillText(food.name, drawX, drawY + 24);
+                ctx.fillText(food.name, 0, 24);
 
-                // 檢測是否碰撞玩家
+                ctx.restore();
+
+                // 檢測是否碰撞玩家 (考慮縮小後的物理碰撞區域)
+                const hitRadius = 45 * scaleFactor;
                 players.forEach(p => {
                     const playerX = p.x * canvas.width;
                     const playerY = p.y * canvas.height;
                     const distX = Math.abs(drawX - playerX);
                     const distY = Math.abs(drawY - playerY);
 
-                    if (distX < 45 && distY < 45) {
+                    if (distX < hitRadius && distY < hitRadius) {
                         p.score += food.score;
 
                         if (food.score > 0) {
