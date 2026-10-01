@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+[cite: 1, 2]<!DOCTYPE html>
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
@@ -274,55 +274,59 @@
                     </div>
                 </div>
 
-                <!-- 中央區域：食物箱與題目任務指示區塊 -->
-                <div class="relative flex-grow flex flex-col items-center justify-center w-full my-auto overflow-hidden">
-                    
-                    <!-- 上方：中央圖案 (食物箱展示區) -->
-                    <div class="relative flex items-center justify-center max-w-full">
+                <!-- 中央區域：改為左右兩欄佈局（食物箱在左、文字說明在右，徹底解決重疊問題） -->
+                <div class="relative flex-grow flex items-center justify-center w-full my-auto overflow-hidden px-4">
+                    <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-center w-full max-w-5xl my-auto">
                         
-                        <!-- 食物箱 -->
-                        <div id="main-big-box" class="w-[21.6rem] md:w-[28.8rem] max-h-[36vh] max-w-[90vw] flex flex-col items-center justify-center relative box-active z-10 p-1">
-                            <div class="text-[9rem] md:text-[11.4rem] leading-none mb-2 drop-shadow-2xl">📦</div>
-                            
-                            <!-- 文字完整顯示 + 若有年齡層則顯示在下一行 -->
-                            <div class="flex flex-col items-center justify-center text-center">
-                                <span id="big-box-title" class="text-2xl md:text-4xl font-black text-amber-950 tracking-wider whitespace-nowrap">
-                                    膳糧食物箱
-                                </span>
-                                <span id="big-box-age" class="text-lg md:text-2xl font-bold text-amber-800 mt-1 whitespace-nowrap">
-                                    (3-15歲)
-                                </span>
+                        <!-- 左側：食物箱與答對跳躍提示 -->
+                        <div class="md:col-span-5 flex flex-col items-center justify-center relative">
+                            <div id="main-big-box" class="w-full flex flex-col items-center justify-center relative box-active z-10 p-2">
+                                <div class="text-[8rem] md:text-[10rem] leading-none drop-shadow-2xl">📦</div>
+                                <div id="big-box-items-preview" class="flex flex-wrap gap-1.5 justify-center mt-3 max-w-[95%] max-h-[80px] overflow-y-auto">
+                                    <!-- 已放入箱子物資動態縮圖 -->
+                                </div>
                             </div>
 
-                            <div id="big-box-items-preview" class="flex flex-wrap gap-1.5 justify-center mt-2 max-w-[95%] max-h-[85px] overflow-y-auto">
-                                <!-- 已放入箱子物資動態縮圖 -->
+                            <!-- 「答對+1」跳躍效果顯示區 -->
+                            <div id="correct-badge-container" class="absolute right-0 top-0 translate-x-4 -translate-y-4 flex flex-col items-center justify-center pointer-events-none z-30">
+                                <!-- JS 動態插入跳躍動畫的「答對+1」 -->
                             </div>
                         </div>
 
-                        <!-- 右側：「答對+1」跳躍效果顯示區 -->
-                        <div id="correct-badge-container" class="absolute right-0 md:right-2 top-1/2 -translate-y-1/2 flex flex-col items-center justify-center pointer-events-none z-30 max-w-xs">
-                            <!-- JS 動態插入跳躍動畫的「答對+1」 -->
+                        <!-- 右側：食物箱名稱、年齡層與任務指示區塊 -->
+                        <div class="md:col-span-7 flex flex-col items-start justify-center space-y-4 text-left z-20">
+                            <div class="bg-white/90 backdrop-blur-md border-3 border-amber-300 rounded-3xl p-6 shadow-lg w-full">
+                                <div class="flex flex-col items-start">
+                                    <span id="big-box-title" class="text-3xl md:text-5xl font-black text-amber-950 tracking-wider">
+                                        膳糧食物箱
+                                    </span>
+                                    <span id="big-box-age" class="text-xl md:text-3xl font-bold text-amber-800 mt-2">
+                                        (3-15歲)
+                                    </span>
+                                </div>
+
+                                <hr class="border-amber-200 my-4 w-full">
+
+                                <div class="bg-amber-100/70 p-4 rounded-2xl border border-amber-300/80 w-full">
+                                    <p id="box-instruction" class="text-lg md:text-xl font-black text-amber-900 leading-relaxed">
+                                        💡 任務說明：<br>請從手機畫面中點選合格物資放進箱子！
+                                    </p>
+                                </div>
+                            </div>
                         </div>
-                    </div>
 
-                    <!-- 下方：題目任務指示與說明 (位置移動至食物箱下方，保留 mt-8 間距避免重疊) -->
-                    <div class="w-full max-w-3xl bg-white/80 backdrop-blur-sm rounded-2xl p-4 border-2 border-amber-200 text-center shadow-md overflow-hidden mt-8 z-20 flex-shrink-0">
-                        <p id="box-instruction" class="text-lg md:text-xl font-black text-amber-900 whitespace-nowrap overflow-hidden text-ellipsis">
-                            任務：請從手機點選合格物資放進箱子！
-                        </p>
                     </div>
-
                 </div>
 
             </div>
         </div>
 
-        <!-- 大螢幕 - 最終頒獎結算畫面 (已整合問答遊戲頒獎視覺與煙火風格) -->
+        <!-- 大螢幕 - 最後得獎頒獎畫面 -->
         <div id="view-result" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-xl p-6">
-            <div class="w-full max-w-7xl h-full max-h-[90vh] bg-slate-900 border-2 border-amber-400 rounded-3xl p-6 md:p-8 flex flex-col justify-between shadow-2xl overflow-hidden relative">
+            <div class="w-full max-w-7xl h-full max-h-[90vh] bg-slate-900 border-2 border-neon-yellow rounded-3xl p-6 md:p-8 flex flex-col justify-between shadow-2xl overflow-hidden relative">
                 
-                <h2 class="text-3xl md:text-5xl font-black text-center text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-yellow-400 to-amber-500 mb-2 flex-shrink-0 whitespace-nowrap">
-                    🏆 志工打包大挑戰 榮譽頒獎 🏆
+                <h2 class="text-3xl md:text-5xl font-black text-center text-transparent bg-clip-text bg-gradient-to-r from-neon-yellow via-amber-300 to-yellow-500 mb-2 flex-shrink-0">
+                    🏆 最終頒獎典禮 🏆
                 </h2>
 
                 <div class="grid grid-cols-1 md:grid-cols-12 gap-6 flex-grow overflow-hidden my-2">
@@ -330,7 +334,7 @@
                     <div class="md:col-span-3 bg-slate-950/60 rounded-2xl p-4 border border-slate-800 flex flex-col justify-between overflow-hidden">
                         <div class="flex justify-between items-center mb-3 border-b border-slate-800 pb-2 flex-shrink-0">
                             <span class="font-black text-xl md:text-2xl text-amber-300">全場排名 (左)</span>
-                            <span id="result-left-count" class="text-xs bg-slate-800 text-amber-400 px-2.5 py-1 rounded-full font-bold">0 人</span>
+                            <span id="result-left-count" class="text-xs bg-slate-800 text-neon-yellow px-2.5 py-1 rounded-full font-bold">0 人</span>
                         </div>
                         <div id="result-left-list" class="space-y-2 overflow-hidden pr-1 flex-grow"></div>
                     </div>
@@ -345,7 +349,7 @@
                     <div class="md:col-span-3 bg-slate-950/60 rounded-2xl p-4 border border-slate-800 flex flex-col justify-between overflow-hidden">
                         <div class="flex justify-between items-center mb-3 border-b border-slate-800 pb-2 flex-shrink-0">
                             <span class="font-black text-xl md:text-2xl text-amber-300">全場排名 (右)</span>
-                            <span id="result-right-count" class="text-xs bg-slate-800 text-amber-400 px-2.5 py-1 rounded-full font-bold">0 人</span>
+                            <span id="result-right-count" class="text-xs bg-slate-800 text-neon-yellow px-2.5 py-1 rounded-full font-bold">0 人</span>
                         </div>
                         <div id="result-right-list" class="space-y-2 overflow-hidden pr-1 flex-grow"></div>
                     </div>
@@ -363,7 +367,7 @@
 
     <script>
         /* ==========================================================================
-           1. 音效控制 (Web Audio API - 心跳急促聲 + 答對歡快跳躍音效 + 馬力歐頒獎音樂)
+           1. 音效控制 (Web Audio API - 心跳急促聲 + 答對歡快跳躍音效 + 瑪莉歐勝利樂章音樂)
            ========================================================================== */
         let audioCtx = null;
         let currentBgmType = null;
@@ -377,6 +381,10 @@
                 audioCtx.resume();
             }
             return audioCtx;
+        }
+
+        function initAudio() {
+            getAudioContext();
         }
 
         function playSingleNote(freq, duration, type = 'square', gainValue = 0.12) {
@@ -398,9 +406,8 @@
             }
         }
 
-        // 來自問答遊戲的馬力歐頒獎勝利音樂
         function playMarioVictoryFanfare() {
-            getAudioContext();
+            initAudio();
             stopBgm();
             currentBgmType = 'victory';
 
@@ -1220,11 +1227,13 @@
         }
 
         /* ==========================================================================
-           8. 最終結算與頒獎 (套用問答遊戲頒獎雙邊全場排名、TOP3卡片、音樂與煙火)
+           8. 最終結算與頒獎
            ========================================================================== */
         function showFinalResult() {
             document.getElementById('view-game').classList.add('hidden');
             document.getElementById('view-result').classList.remove('hidden');
+
+            playMarioVictoryFanfare();
 
             const allSorted = [...players].sort((a, b) => b.score - a.score);
 
@@ -1240,42 +1249,40 @@
                 }
             });
 
-            // 分割全場排名至左右兩側
-            const halfLength = Math.ceil(allSorted.length / 2);
-            const leftPlayers = allSorted.slice(0, halfLength);
-            const rightPlayers = allSorted.slice(halfLength);
-
-            const leftContainer = document.getElementById('result-left-list');
-            const rightContainer = document.getElementById('result-right-list');
-            leftContainer.innerHTML = '';
-            rightContainer.innerHTML = '';
+            const midIndex = Math.ceil(allSorted.length / 2);
+            const leftPlayers = allSorted.slice(0, midIndex);
+            const rightPlayers = allSorted.slice(midIndex);
 
             document.getElementById('result-left-count').innerText = `${leftPlayers.length} 人`;
-            document.getElementById('result-right-count').innerText = `${rightPlayers.length} 人`;
+            const leftContainer = document.getElementById('result-left-list');
+            leftContainer.innerHTML = '';
 
             leftPlayers.forEach((p, idx) => {
-                const rankNum = idx + 1;
+                const realRank = idx + 1;
                 const item = document.createElement('div');
-                item.className = 'flex justify-between items-center p-2.5 bg-slate-900/80 rounded-xl border border-slate-800 text-sm';
+                item.className = 'flex justify-between items-center p-2.5 bg-slate-800/80 rounded-xl border border-slate-700/80 text-sm';
                 item.innerHTML = `
-                    <span class="font-bold text-white whitespace-nowrap overflow-hidden text-ellipsis">#${rankNum} ${p.displayName || p.name}</span>
-                    <span class="font-black text-amber-400 whitespace-nowrap">${p.score} 分</span>
+                    <span class="font-bold text-slate-200 whitespace-nowrap overflow-hidden text-ellipsis max-w-[140px]">#${realRank} ${p.displayName || p.name}</span>
+                    <span class="font-black text-neon-yellow whitespace-nowrap">${p.score} 分</span>
                 `;
                 leftContainer.appendChild(item);
             });
 
+            document.getElementById('result-right-count').innerText = `${rightPlayers.length} 人`;
+            const rightContainer = document.getElementById('result-right-list');
+            rightContainer.innerHTML = '';
+
             rightPlayers.forEach((p, idx) => {
-                const rankNum = halfLength + idx + 1;
+                const realRank = midIndex + idx + 1;
                 const item = document.createElement('div');
-                item.className = 'flex justify-between items-center p-2.5 bg-slate-900/80 rounded-xl border border-slate-800 text-sm';
+                item.className = 'flex justify-between items-center p-2.5 bg-slate-800/80 rounded-xl border border-slate-700/80 text-sm';
                 item.innerHTML = `
-                    <span class="font-bold text-white whitespace-nowrap overflow-hidden text-ellipsis">#${rankNum} ${p.displayName || p.name}</span>
-                    <span class="font-black text-amber-400 whitespace-nowrap">${p.score} 分</span>
+                    <span class="font-bold text-slate-200 whitespace-nowrap overflow-hidden text-ellipsis max-w-[140px]">#${realRank} ${p.displayName || p.name}</span>
+                    <span class="font-black text-neon-yellow whitespace-nowrap">${p.score} 分</span>
                 `;
                 rightContainer.appendChild(item);
             });
 
-            // 中間 TOP 3 展現區
             const top3Container = document.getElementById('top3-container');
             top3Container.innerHTML = '';
 
@@ -1285,50 +1292,34 @@
             top3.forEach((p, idx) => {
                 const card = document.createElement('div');
                 if (idx === 0) {
-                    card.className = 'w-full max-w-md p-5 rounded-3xl border-4 border-amber-400 bg-slate-900/90 shadow-xl flex flex-col items-center justify-center';
+                    card.className = 'w-full max-w-md p-5 rounded-3xl border-4 border-amber-400 bg-slate-950/90 shadow-[0_0_50px_rgba(251,191,36,0.3)] flex flex-col items-center justify-center';
                     card.innerHTML = `
-                        <span class="text-sm font-black text-slate-950 bg-amber-400 px-4 py-1 rounded-full mb-1 whitespace-nowrap">👑 冠軍愛心包裝王 👑</span>
-                        <div class="text-5xl my-1">🥇</div>
-                        <div class="text-2xl font-black text-amber-300 whitespace-nowrap overflow-hidden text-ellipsis max-w-full">${p.displayName || p.name}</div>
-                        <div class="text-2xl font-black text-emerald-400 mt-1 whitespace-nowrap">${p.score} 分</div>
+                        <span class="text-sm font-black text-slate-950 bg-gradient-to-r from-amber-300 to-yellow-500 px-4 py-1 rounded-full mb-1 whitespace-nowrap shadow">👑 冠軍愛心包裝王 👑</span>
+                        <div class="text-5xl my-1 animate-bounce">🥇</div>
+                        <div class="text-2xl font-black text-white whitespace-nowrap overflow-hidden text-ellipsis max-w-full">${p.displayName || p.name}</div>
+                        <div class="text-2xl font-black text-neon-green mt-1 whitespace-nowrap">${p.score} 分</div>
                     `;
                 } else {
-                    card.className = 'w-full max-w-md p-3.5 rounded-2xl border-2 border-amber-500/50 bg-slate-900/80 shadow flex justify-between items-center px-6';
+                    card.className = 'w-full max-w-md p-3.5 rounded-2xl border-2 border-amber-500/50 bg-slate-950/80 shadow-lg flex justify-between items-center px-6';
                     card.innerHTML = `
                         <div class="flex items-center gap-3 truncate">
                             <span class="text-3xl flex-shrink-0">${idx === 1 ? '🥈' : '🥉'}</span>
                             <div class="text-left truncate">
-                                <span class="text-xs font-bold text-amber-400/80 whitespace-nowrap">${medals[idx]}</span>
+                                <span class="text-xs font-bold text-amber-400 whitespace-nowrap">${medals[idx]}</span>
                                 <div class="text-xl font-black text-white truncate whitespace-nowrap">${p.displayName || p.name}</div>
                             </div>
                         </div>
-                        <div class="text-xl font-black text-emerald-400 flex-shrink-0 whitespace-nowrap">${p.score} 分</div>
+                        <div class="text-xl font-black text-neon-green flex-shrink-0 whitespace-nowrap">${p.score} 分</div>
                     `;
                 }
                 top3Container.appendChild(card);
             });
 
-            // 播放問答遊戲的馬力歐勝利音樂
-            playMarioVictoryFanfare();
-
-            // 施放煙火動畫 (來自問答遊戲之持續多波段噴射效果)
-            const duration = 3.5 * 1000;
-            const animationEnd = Date.now() + duration;
-            const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 9999 };
-
-            function randomInRange(min, max) {
-                return Math.random() * (max - min) + min;
-            }
-
-            const interval = setInterval(function() {
-                const timeLeft = animationEnd - Date.now();
-                if (timeLeft <= 0) {
-                    return clearInterval(interval);
-                }
-                const particleCount = 50 * (timeLeft / duration);
-                confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } }));
-                confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } }));
-            }, 250);
+            confetti({
+                particleCount: 100,
+                spread: 70,
+                origin: { y: 0.6 }
+            });
         }
 
         /* ==========================================================================
