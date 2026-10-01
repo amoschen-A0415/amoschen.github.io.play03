@@ -63,6 +63,9 @@
 </head>
 <body class="h-screen w-screen flex flex-col justify-between overflow-hidden">
 
+    <!-- 背景音樂：心花開 (台語歌) -->
+    <audio id="bgm" loop preload="auto" src="https://ia801503.us.archive.org/15/items/xin-hua-kai/%E5%BF%83%E8%8A%B1%E9%96%8B.mp3"></audio>
+
     <!-- 頂部 Header -->
     <header id="main-header" class="w-full px-6 py-3 border-b border-amber-200/60 bg-white/70 backdrop-blur-md flex justify-between items-center z-10 flex-shrink-0 shadow-sm">
         <div class="flex items-center space-x-3">
@@ -71,8 +74,13 @@
                 安得烈食物銀行 - 春日食物接接樂
             </h1>
         </div>
-        <div id="game-stage-badge" class="hidden px-4 py-1.5 rounded-full text-sm md:text-lg font-bold bg-amber-100 border border-amber-300 text-amber-800 shadow-sm">
-            準備中
+        <div class="flex items-center gap-3">
+            <button id="btn-toggle-audio" class="px-3 py-1.5 bg-rose-100 hover:bg-rose-200 text-rose-800 font-bold rounded-full text-sm border border-rose-300 transition flex items-center gap-1.5 shadow-sm">
+                <i class="fa-solid fa-music"></i> 🎵 心花開 BGM
+            </button>
+            <div id="game-stage-badge" class="hidden px-4 py-1.5 rounded-full text-sm md:text-lg font-bold bg-amber-100 border border-amber-300 text-amber-800 shadow-sm">
+                準備中
+            </div>
         </div>
     </header>
 
@@ -389,15 +397,93 @@
         let foodDropSpeed = 3.5;
         let spawnedFoodCount = 0;
         let activeFoods = [];
+        let scorePopups = []; // 儲存躍動得分特效 (+2 / -1)
         let gameLoopId = null;
         let isGameRunning = false;
 
         // Canvas 設定
         let canvas, ctx;
 
+        // 音效 Web Audio API 系統
+        let audioCtx = null;
+
+        function getAudioContext() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            return audioCtx;
+        }
+
+        // 播放吃到正確食物 (+2) 的清脆躍動音效
+        function playScoreSound() {
+            try {
+                const ctx = getAudioContext();
+                const now = ctx.currentTime;
+                
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(523.25, now); // C5
+                osc.frequency.exponentialRampToValueAtTime(1046.50, now + 0.15); // C6
+
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+
+                osc.start(now);
+                osc.stop(now + 0.2);
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        // 播放煙火爆炸聲效
+        function playFireworkBoomSound() {
+            try {
+                const ctx = getAudioContext();
+                const now = ctx.currentTime;
+
+                // 低頻發射/爆炸聲
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(160, now);
+                osc.frequency.exponentialRampToValueAtTime(40, now + 0.4);
+
+                gain.gain.setValueAtTime(0.5, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+
+                osc.start(now);
+                osc.stop(now + 0.4);
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
         window.onload = () => {
             const urlParams = new URLSearchParams(window.location.search);
             const hostId = urlParams.get('host');
+
+            // BGM 音樂播放按鈕
+            const bgm = document.getElementById('bgm');
+            document.getElementById('btn-toggle-audio').addEventListener('click', () => {
+                getAudioContext();
+                if (bgm.paused) {
+                    bgm.play().catch(()=>{});
+                } else {
+                    bgm.pause();
+                }
+            });
 
             if (hostId) {
                 document.getElementById('main-header').classList.add('hidden');
@@ -717,6 +803,14 @@
             }
 
             renderLobbyPlayers();
+            
+            // 啟動背景音樂心花開
+            const bgm = document.getElementById('bgm');
+            getAudioContext();
+            if (bgm) {
+                bgm.play().catch(e => console.log("Audio play blocked", e));
+            }
+
             startGame();
         }
 
@@ -757,6 +851,7 @@
 
             spawnedFoodCount = 0;
             activeFoods = [];
+            scorePopups = [];
             isGameRunning = true;
 
             requestAnimationFrame(gameLoop);
@@ -841,12 +936,57 @@
 
                     if (distX < 45 && distY < 45) {
                         p.score += food.score;
+
+                        if (food.score > 0) {
+                            // 正確食物 +2 音效與躍動文字效果
+                            playScoreSound();
+                            scorePopups.push({
+                                text: '+2',
+                                x: drawX,
+                                y: drawY - 10,
+                                alpha: 1.0,
+                                scale: 1.5,
+                                color: '#f59e0b'
+                            });
+                        } else {
+                            scorePopups.push({
+                                text: '-1',
+                                x: drawX,
+                                y: drawY - 10,
+                                alpha: 1.0,
+                                scale: 1.2,
+                                color: '#f43f5e'
+                            });
+                        }
+
                         activeFoods.splice(i, 1);
                     }
                 });
 
                 if (activeFoods[i] && food.y > 1.05) {
                     activeFoods.splice(i, 1);
+                }
+            }
+
+            // 繪製 +2 躍動得分飄浮特效
+            for (let i = scorePopups.length - 1; i >= 0; i--) {
+                const pop = scorePopups[i];
+                pop.y -= 1.5;
+                pop.alpha -= 0.025;
+                if (pop.scale > 1.0) pop.scale -= 0.02;
+
+                ctx.save();
+                ctx.globalAlpha = Math.max(0, pop.alpha);
+                ctx.font = `900 ${Math.round(28 * pop.scale)}px "Noto Sans TC"`;
+                ctx.fillStyle = pop.color;
+                ctx.textAlign = 'center';
+                ctx.shadowColor = 'rgba(0,0,0,0.3)';
+                ctx.shadowBlur = 6;
+                ctx.fillText(pop.text, pop.x, pop.y);
+                ctx.restore();
+
+                if (pop.alpha <= 0) {
+                    scorePopups.splice(i, 1);
                 }
             }
 
@@ -994,12 +1134,37 @@
                 top3Container.appendChild(card);
             });
 
-            // 慶祝花火特效
-            confetti({
-                particleCount: 120,
-                spread: 80,
-                origin: { y: 0.6 }
-            });
+            // 慶祝 8 秒滿屏煙火 + 音效
+            launch8SecFireworks();
+        }
+
+        // 8 秒持續滿屏煙火與聲效
+        function launch8SecFireworks() {
+            const duration = 8 * 1000; // 8 秒
+            const animationEnd = Date.now() + duration;
+
+            const interval = setInterval(() => {
+                const timeLeft = animationEnd - Date.now();
+
+                if (timeLeft <= 0) {
+                    return clearInterval(interval);
+                }
+
+                // 播放煙火爆炸聲
+                playFireworkBoomSound();
+
+                // 滿屏隨機位置雙邊發射煙火
+                confetti({
+                    particleCount: 40,
+                    startVelocity: 30,
+                    spread: 360,
+                    ticks: 60,
+                    origin: {
+                        x: Math.random(),
+                        y: Math.random() * 0.6 + 0.1
+                    }
+                });
+            }, 350);
         }
     </script>
 </body>
