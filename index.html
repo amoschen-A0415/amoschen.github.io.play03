@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>安得烈食物銀行 - 食物接接樂春日大亂鬥</title>
+    <title>安得烈食物銀行 - 即時志工打包大挑戰</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- PeerJS & QRCode.js -->
@@ -11,38 +11,22 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <!-- Canvas Confetti CDN -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-    <!-- FontAwesome CDN -->
+    <!-- Google Fonts Inter & Noto Sans TC -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        spring: {
-                            green: '#84cc16',
-                            lightGreen: '#f7fee7',
-                            pink: '#f43f5e',
-                            lightPink: '#fdf2f8',
-                            yellow: '#f59e0b',
-                            sky: '#06b6d4',
-                            warmBg: '#fefce8'
-                        }
-                    }
-                }
-            }
-        }
-    </script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap');
-        body {
+        html, body {
+            font-size: 115%;
             font-family: 'Noto Sans TC', sans-serif;
-            background: linear-gradient(135deg, #e0f2fe 0%, #fef3c7 50%, #fce7f3 100%);
-            color: #1e293b;
+            background: linear-gradient(135deg, #fffbeb 0%, #f0fdf4 50%, #e0f2fe 100%);
+            min-height: 100vh;
             user-select: none;
+            -webkit-user-select: none;
             overflow: hidden;
         }
 
+        /* 隱藏滾動條 */
         * {
             scrollbar-width: none !important;
             -ms-overflow-style: none !important;
@@ -59,97 +43,120 @@
             max-width: 100%;
             height: auto;
         }
+
+        /* 柔和溫柔卡片浮動效果 */
+        .sun-card {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(12px);
+            border: 3px solid #fde68a;
+            box-shadow: 0 10px 25px -5px rgba(251, 191, 36, 0.15), 0 8px 10px -6px rgba(251, 191, 36, 0.1);
+        }
+
+        /* 物資圖示漂浮旋轉動畫 */
+        @keyframes item-pop {
+            0% { transform: scale(0.6) rotate(-10deg); opacity: 0; }
+            70% { transform: scale(1.1) rotate(5deg); opacity: 1; }
+            100% { transform: scale(1) rotate(0deg); opacity: 1; }
+        }
+        .animate-pop {
+            animation: item-pop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+
+        @keyframes box-bounce {
+            0%, 100% { transform: translateY(0) scale(1); }
+            50% { transform: translateY(-8px) scale(1.02); }
+        }
+        .box-active {
+            animation: box-bounce 2.5s ease-in-out infinite;
+        }
+
+        /* 答對 +1 跳躍動畫 (限制於範圍內向上跳躍並淡出) */
+        @keyframes correct-jump {
+            0% { transform: translateY(10px) scale(0.7); opacity: 0; }
+            40% { transform: translateY(-15px) scale(1.1); opacity: 1; }
+            70% { transform: translateY(-25px) scale(1); opacity: 1; }
+            100% { transform: translateY(-35px) scale(0.9); opacity: 0; }
+        }
+        .animate-jump-float {
+            animation: correct-jump 0.9s ease-out forwards;
+        }
     </style>
 </head>
-<body class="h-screen w-screen flex flex-col justify-between overflow-hidden">
+<body class="h-screen w-screen flex flex-col justify-between p-3 relative text-slate-800">
 
-    <!-- 背景音樂：心花開 (台語歌) -->
-    <audio id="bgm" loop preload="auto" src="https://ia801503.us.archive.org/15/items/xin-hua-kai/%E5%BF%83%E8%8A%B1%E9%96%8B.mp3"></audio>
+    <!-- 全局 Toast 提示通知欄 -->
+    <div id="toast" class="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-amber-500 text-white px-6 py-3 rounded-2xl shadow-2xl font-black flex items-center space-x-3 text-lg border-2 border-amber-200 pointer-events-none transition-all duration-300 opacity-0 -translate-y-12">
+        <span id="toast-icon" class="text-2xl">💡</span>
+        <span id="toast-msg">提示訊息</span>
+    </div>
 
-    <!-- 頂部 Header -->
-    <header id="main-header" class="w-full px-6 py-3 border-b border-amber-200/60 bg-white/70 backdrop-blur-md flex justify-between items-center z-10 flex-shrink-0 shadow-sm">
+    <!-- 大螢幕 / 兩端頂部 Header -->
+    <header id="main-header" class="w-full px-6 py-2.5 rounded-2xl sun-card flex justify-between items-center z-10 flex-shrink-0 mb-2">
         <div class="flex items-center space-x-3">
-            <span class="text-3xl">🌸</span>
-            <h1 class="text-2xl md:text-3xl font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 via-amber-500 to-rose-500">
-                安得烈食物銀行 - 春日食物接接樂
+            <span class="text-3xl">🍞</span>
+            <h1 class="text-2xl md:text-3xl font-black text-amber-900 tracking-wide flex items-center gap-2">
+                安得烈食物銀行 <span class="bg-amber-100 text-amber-800 text-base px-3 py-1 rounded-full border border-amber-300">志工打包大挑戰</span>
             </h1>
-        </div>
-        <div class="flex items-center gap-3">
-            <div id="game-stage-badge" class="px-4 py-1.5 rounded-full text-sm md:text-lg font-bold bg-amber-100 border border-amber-300 text-amber-800 shadow-sm">
-                準備中
-            </div>
         </div>
     </header>
 
-    <!-- 主要內容區域 -->
-    <main class="flex-grow flex items-center justify-center p-2 md:p-4 relative overflow-hidden">
+    <!-- 主要內容區 -->
+    <main class="flex-grow flex items-center justify-center relative overflow-hidden w-full max-w-[98vw] mx-auto">
 
-        <!-- 大螢幕 - 遊戲大廳 / 掃碼進入 -->
-        <div id="view-lobby" class="w-full max-w-[96vw] h-full max-h-[90vh] bg-white/80 border-2 border-amber-200/80 rounded-3xl p-4 md:p-6 shadow-xl backdrop-blur-xl relative flex flex-col justify-between overflow-hidden">
+        <!-- 大螢幕 - QR 連線大廳 -->
+        <div id="view-lobby" class="w-full h-full sun-card rounded-3xl p-6 relative flex flex-col justify-between overflow-hidden">
             <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-center h-full">
                 
                 <!-- 左側：QR Code -->
-                <div class="md:col-span-6 lg:col-span-7 flex flex-col items-center justify-center border-b md:border-b-0 md:border-r border-amber-200/80 pr-0 md:pr-6 pb-2 md:pb-0 text-center h-full overflow-hidden">
-                    <div class="p-5 bg-gradient-to-br from-amber-200 via-rose-200 to-emerald-200 rounded-3xl shadow-lg my-auto transition-transform hover:scale-[1.02] duration-300 border-2 border-white">
-                        <div id="qrcode" class="bg-white p-4 rounded-2xl border-2 border-amber-100 flex items-center justify-center shadow-inner"></div>
+                <div class="md:col-span-6 lg:col-span-7 flex flex-col items-center justify-center border-b md:border-b-0 md:border-r border-amber-200 pr-0 md:pr-6 pb-2 md:pb-0 text-center h-full overflow-hidden">
+                    <div class="p-5 bg-gradient-to-br from-amber-300 via-orange-300 to-yellow-200 rounded-3xl shadow-[0_0_50px_rgba(251,191,36,0.4)] my-auto transition-transform hover:scale-[1.02] duration-300">
+                        <div id="qrcode" class="bg-white p-4 rounded-2xl border-2 border-white flex items-center justify-center shadow-inner"></div>
                     </div>
                 </div>
 
-                <!-- 右側：玩家名單 & 設定選項 & 開始按鈕 -->
+                <!-- 右側：玩家名單 & 設定選項 -->
                 <div class="md:col-span-6 lg:col-span-5 flex flex-col justify-between h-full overflow-hidden pl-0 md:pl-2">
                     <div class="flex-grow flex flex-col overflow-hidden">
-                        <h2 class="text-2xl md:text-3xl font-bold text-emerald-700 mb-4 flex items-center justify-between flex-shrink-0">
-                            <span class="flex items-center gap-2"><i class="fa-solid fa-users"></i> 已加入人員名單</span>
-                            <span id="player-count-badge" class="text-xl bg-emerald-100 text-emerald-800 px-4 py-1.5 rounded-full font-black border border-emerald-300 shadow-sm">0 人</span>
+                        <h2 class="text-2xl md:text-3xl font-black text-amber-900 mb-4 flex items-center justify-between flex-shrink-0">
+                            <span class="flex items-center gap-2"><i class="fa-solid fa-users"></i> 已加入愛心志工</span>
+                            <span id="player-count-badge" class="text-lg bg-amber-100 text-amber-900 px-4 py-1.5 rounded-full font-black border border-amber-300">0 人</span>
                         </h2>
 
                         <div id="player-list-lobby" class="grid grid-cols-2 lg:grid-cols-3 gap-2.5 overflow-hidden flex-grow content-start">
-                            <div class="col-span-full text-amber-700/60 text-center py-12 font-bold border-2 border-dashed border-amber-300/60 rounded-2xl text-lg bg-amber-50/50">
-                                尚無玩家連線，請掃描左側 QR Code 加入...
+                            <div class="col-span-full text-amber-700/60 text-center py-12 font-bold border-2 border-dashed border-amber-200 rounded-2xl text-lg">
+                                ☀ 請掃描左側 QR Code 加入志工隊伍...
                             </div>
                         </div>
                     </div>
 
-                    <!-- 遊戲參數設定區塊 (右下角選單) -->
-                    <div class="w-full pt-4 flex-shrink-0 bg-amber-50/80 border border-amber-200 rounded-2xl p-4 my-2 shadow-inner">
-                        <h3 class="text-amber-800 font-bold text-base mb-2 flex items-center gap-2">
-                            <i class="fa-solid fa-sliders"></i> 遊戲模式設定
+                    <!-- 遊戲參數設定區塊 -->
+                    <div class="w-full pt-4 flex-shrink-0 bg-amber-50/80 border-2 border-amber-200 rounded-2xl p-4 my-2">
+                        <h3 class="text-amber-900 font-black text-base mb-2 flex items-center gap-2">
+                            <i class="fa-solid fa-sliders"></i> 挑戰規則設定
                         </h3>
-                        <div class="grid grid-cols-3 gap-3">
+                        <div class="grid grid-cols-2 gap-4">
                             <div class="flex flex-col gap-1">
-                                <label for="select-food-count" class="text-xs text-amber-900 font-bold">食物數量</label>
-                                <select id="select-food-count" class="bg-white text-slate-700 font-bold p-2 rounded-xl border border-amber-300 outline-none focus:border-emerald-500 cursor-pointer shadow-sm">
-                                    <option value="20">20 個</option>
-                                    <option value="40" selected>40 個</option>
-                                    <option value="60">60 個</option>
-                                    <option value="80">80 個</option>
-                                    <option value="100">100 個</option>
+                                <label for="select-box-count" class="text-xs text-amber-800 font-black">測驗箱數 (題目數)</label>
+                                <select id="select-box-count" class="bg-white text-amber-900 font-black p-2.5 rounded-xl border-2 border-amber-300 outline-none focus:border-amber-500 cursor-pointer shadow-sm">
+                                    <option value="1">1 箱</option>
+                                    <option value="3" selected>3 箱</option>
+                                    <option value="5">5 箱</option>
                                 </select>
                             </div>
                             <div class="flex flex-col gap-1">
-                                <label for="select-drop-speed" class="text-xs text-amber-900 font-bold">掉落速度</label>
-                                <select id="select-drop-speed" class="bg-white text-slate-700 font-bold p-2 rounded-xl border border-amber-300 outline-none focus:border-emerald-500 cursor-pointer shadow-sm">
-                                    <option value="1.5">超緩慢</option>
-                                    <option value="2.5">緩慢</option>
-                                    <option value="3.5" selected>正常</option>
-                                    <option value="5.0">快速</option>
-                                    <option value="7.0">極速</option>
-                                </select>
-                            </div>
-                            <div class="flex flex-col gap-1">
-                                <label for="select-ai-count" class="text-xs text-amber-900 font-bold">AI參賽人數</label>
-                                <select id="select-ai-count" class="bg-white text-slate-700 font-bold p-2 rounded-xl border border-amber-300 outline-none focus:border-emerald-500 cursor-pointer shadow-sm">
-                                    <option value="0" selected>0 名</option>
-                                    <option value="1">1 名</option>
+                                <label for="select-ai-count" class="text-xs text-amber-800 font-black">AI參賽人數</label>
+                                <select id="select-ai-count" class="bg-white text-amber-900 font-black p-2.5 rounded-xl border-2 border-amber-300 outline-none focus:border-amber-500 cursor-pointer shadow-sm">
+                                    <option value="1" selected>1 名</option>
                                     <option value="2">2 名</option>
+                                    <option value="3">3 名</option>
                                 </select>
                             </div>
                         </div>
                     </div>
 
                     <div id="lobby-start-box" class="w-full pt-2 flex-shrink-0">
-                        <button id="btn-start-game" class="hidden w-full py-4 text-3xl font-black text-amber-950 bg-gradient-to-r from-amber-300 via-emerald-300 to-teal-300 rounded-2xl shadow-lg hover:brightness-105 active:scale-95 transition-all animate-bounce border-2 border-white">
-                            🎮 開始春日熱血賽
+                        <button id="btn-start-game" class="hidden w-full py-3.5 text-2xl font-black text-white bg-gradient-to-r from-emerald-400 to-green-500 hover:from-emerald-500 hover:to-green-600 rounded-2xl shadow-lg active:scale-95 transition-all border-b-4 border-green-700 flex items-center justify-center gap-2">
+                            🚀 開始志工體驗挑戰
                         </button>
                     </div>
                 </div>
@@ -157,151 +164,188 @@
             </div>
         </div>
 
-        <!-- 手機端 - 玩家控制器 (可選指尖觸控滑動或體感傾斜控制) -->
-        <div id="view-player-mobile" class="hidden fixed inset-0 z-50 bg-gradient-to-b from-sky-100 via-amber-50 to-emerald-100 p-4 flex-col justify-between overflow-hidden">
-            <div id="mobile-top-bar" class="text-center space-y-1 flex-shrink-0 pt-2">
-                <span class="text-4xl">🌸</span>
-                <h2 class="text-xl font-black text-emerald-800">食物接接樂體感/觸控控制器</h2>
-                <p id="player-mobile-name" class="text-amber-700 font-bold text-base">正在連線大螢幕...</p>
-                <div id="mobile-avatar-display" class="hidden text-6xl py-2 animate-bounce">
-                    🐱
+        <!-- 手機端 - 玩家控制器 -->
+        <div id="view-player-mobile" class="hidden fixed inset-0 z-50 bg-amber-50/95 p-4 flex-col justify-between overflow-hidden">
+            
+            <div id="mobile-join-form" class="space-y-4 bg-white p-6 rounded-3xl border-4 border-amber-300 shadow-xl my-auto">
+                <div class="text-center">
+                    <span class="text-5xl">🎁</span>
+                    <h2 class="text-2xl font-black text-amber-900 mt-2">安得烈志工報到</h2>
+                    <p class="text-xs font-bold text-amber-700">請輸入暱稱準備進行物資打包！</p>
                 </div>
-            </div>
-
-            <div id="mobile-join-form" class="space-y-4 bg-white/90 p-6 rounded-3xl border-2 border-amber-200 my-auto shadow-xl backdrop-blur-md">
                 <input type="text" id="mobile-name-input" maxlength="8" placeholder="請輸入您的暱稱..." 
-                    class="w-full bg-amber-50/50 border-2 border-amber-300 p-4 rounded-2xl text-center text-slate-800 text-xl font-bold focus:border-emerald-500 outline-none shadow-inner">
-                <button id="btn-mobile-join" class="w-full py-4 bg-gradient-to-r from-emerald-400 to-teal-400 text-white font-black text-xl rounded-2xl shadow-lg border-2 border-white">
+                    class="w-full bg-amber-50 border-2 border-amber-300 p-4 rounded-2xl text-center text-amber-900 text-xl font-black focus:border-amber-500 outline-none">
+                <button id="btn-mobile-join" class="w-full py-4 bg-gradient-to-r from-amber-400 to-orange-400 text-white font-black text-xl rounded-2xl shadow-lg active:scale-95 border-b-4 border-orange-600">
                     確認參賽
                 </button>
             </div>
 
-            <!-- 控制器 - 指尖觸控操控區域 & 靈敏度調整功能 -->
-            <div id="mobile-controls" class="hidden flex-col items-center justify-center gap-3 w-full my-auto bg-white/80 border-2 border-emerald-300 rounded-3xl p-4 shadow-xl backdrop-blur-md">
+            <!-- 手機端遊戲控制與狀態顯示面板 -->
+            <div id="mobile-game-panel" class="hidden h-full flex-col justify-between py-2">
                 
-                <!-- 頂部：靈敏度調節與重置按鈕區塊 -->
-                <div class="w-full flex items-center justify-between px-2 gap-2">
-                    <div class="flex items-center gap-1.5 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-xl shadow-sm">
-                        <i class="fa-solid fa-gauge-high text-amber-600 text-xs"></i>
-                        <label for="select-sensitivity" class="text-xs font-bold text-amber-900 whitespace-nowrap">靈敏度：</label>
-                        <select id="select-sensitivity" class="bg-white text-slate-800 font-black text-xs p-1 rounded-lg border border-amber-300 outline-none cursor-pointer">
-                            <option value="0.5">極低 (0.5x)</option>
-                            <option value="0.8">低 (0.8x)</option>
-                            <option value="1.0" selected>標準 (1.0x)</option>
-                            <option value="1.5">高 (1.5x)</option>
-                            <option value="2.0">極高 (2.0x)</option>
-                        </select>
+                <!-- 上方：姓名、題數與波次頂部欄 -->
+                <div class="bg-white p-3 rounded-2xl border-2 border-amber-300 shadow-md flex justify-between items-center flex-shrink-0">
+                    <div>
+                        <span class="text-xs text-amber-700 font-bold block">志工姓名</span>
+                        <span id="mobile-user-name" class="text-base font-black text-amber-900">--</span>
                     </div>
-
-                    <button id="btn-recalibrate" class="px-3 py-1.5 bg-amber-400 active:bg-amber-500 text-amber-950 font-bold rounded-xl shadow border border-white text-xs flex items-center gap-1 whitespace-nowrap">
-                        <i class="fa-solid fa-rotate-right"></i> 重置原點
-                    </button>
-                </div>
-
-                <!-- 指尖觸控操控面板 (Touchpad) -->
-                <div id="touchpad-area" class="w-full h-52 bg-gradient-to-b from-slate-800 to-slate-900 rounded-2xl border-2 border-slate-700 relative overflow-hidden shadow-inner flex flex-col items-center justify-center touch-none select-none cursor-grab active:cursor-grabbing">
-                    <!-- 背景網格裝飾紋理 -->
-                    <div class="absolute inset-0 bg-[radial-gradient(#334155_1px,transparent_1px)] [background-size:16px_16px] opacity-40 pointer-events-none"></div>
-                    <!-- 十字輔助線 -->
-                    <div class="absolute w-full h-0.5 bg-slate-700/60 pointer-events-none"></div>
-                    <div class="absolute h-full w-0.5 bg-slate-700/60 pointer-events-none"></div>
-                    
-                    <!-- 指尖操控軌跡動態反饋視覺 -->
-                    <div id="touch-pointer" class="w-12 h-12 bg-emerald-500/80 border-2 border-emerald-300 rounded-full transition-transform duration-75 absolute shadow-lg shadow-emerald-500/50 flex items-center justify-center pointer-events-none" style="top: 50%; left: 50%; transform: translate(-50%, -50%);">
-                        <div class="w-3 h-3 bg-white rounded-full"></div>
+                    <div class="text-center">
+                        <span class="text-xs text-amber-700 font-bold block">當前箱數</span>
+                        <span id="mobile-box-num" class="text-base font-black text-emerald-600">第 1/3 箱</span>
                     </div>
-
-                    <!-- 引導提示文字 -->
-                    <div id="touchpad-hint" class="text-slate-400 font-bold text-sm pointer-events-none z-10 flex flex-col items-center gap-1">
-                        <i class="fa-solid fa-hand-pointer text-2xl text-emerald-400 animate-bounce"></i>
-                        <span>指尖在此滑動操控上下左右</span>
+                    <div class="text-right">
+                        <span class="text-xs text-amber-700 font-bold block">當前波次</span>
+                        <span id="mobile-wave-num" class="text-base font-black text-orange-600">第 1/4 波</span>
                     </div>
                 </div>
 
-                <div class="text-slate-600 font-bold text-xs text-center flex items-center justify-between w-full px-2">
-                    <span>傾斜角度: <strong id="tilt-angle-text" class="text-emerald-700 font-black">0°, 0°</strong></span>
-                    <span class="text-slate-400">|</span>
-                    <span>觸控/傾斜雙模式支援</span>
+                <!-- 中間：4 個選擇物資按鈕 -->
+                <div id="mobile-options-container" class="grid grid-cols-2 gap-4 my-auto flex-grow items-center p-2">
+                    <!-- JS 動態產生選項按鈕 -->
+                </div>
+
+                <!-- 底部：操作響應訊息 -->
+                <div id="mobile-status-text" class="mt-2 text-center bg-amber-200/80 text-amber-900 font-black py-2.5 px-3 rounded-xl text-sm border border-amber-300 flex-shrink-0 shadow-sm">
+                    ☀️ 準備好了！請點選上方物資進行搶答！
                 </div>
             </div>
 
             <!-- 手機端 - 最終結算 -->
-            <div id="mobile-final-result" class="hidden my-auto flex-col items-center justify-center space-y-4 text-center bg-white border-2 border-amber-300 p-8 rounded-3xl shadow-2xl w-full">
+            <div id="mobile-final-result" class="hidden my-auto flex-col items-center justify-center space-y-4 text-center bg-white border-4 border-amber-400 p-8 rounded-3xl shadow-2xl w-full">
                 <span class="text-6xl" id="mobile-result-icon">🏆</span>
-                <h2 class="text-2xl font-black text-amber-700">遊戲最終結算</h2>
+                <h2 class="text-2xl font-black text-amber-900">遊戲最終結算</h2>
                 
                 <div class="flex flex-col items-center space-y-1 my-2">
-                    <div class="text-5xl font-black text-slate-800 tracking-wider" id="mobile-result-rank">第 - 名</div>
-                    <div class="text-lg font-bold text-slate-500" id="mobile-result-total">共 - 人</div>
+                    <div class="text-5xl font-black text-amber-900 tracking-wider" id="mobile-result-rank">第 - 名</div>
+                    <div class="text-lg font-bold text-amber-700" id="mobile-result-total">共 - 人</div>
                 </div>
 
-                <div class="text-2xl font-bold text-slate-700">總得分：<span id="mobile-result-score" class="text-emerald-600 font-black">0</span> 分</div>
+                <div class="text-2xl font-bold text-amber-800">總得分：<span id="mobile-result-score" class="text-emerald-600 font-black">0</span> 分</div>
                 
-                <div id="mobile-result-status" class="text-base font-bold text-emerald-800 pt-2">感謝您的熱情參與！</div>
-            </div>
-
-            <div id="mobile-status-text" class="text-center text-emerald-900 font-bold py-2 text-sm flex-shrink-0 bg-white/50 rounded-full my-2 border border-emerald-200">
-                連線成功！請輸入暱稱完成登錄
+                <div id="mobile-result-status" class="text-base font-bold text-amber-900 pt-2">感謝您的熱情參與！</div>
             </div>
         </div>
 
-        <!-- 大螢幕 - 遊戲主畫面 (Canvas 遊戲場景) -->
-        <div id="view-game" class="hidden w-full h-full max-h-[96vh] grid grid-cols-1 md:grid-cols-12 gap-4 overflow-hidden">
+        <!-- 大螢幕 - 題目波次間隔 Splash -->
+        <div id="view-question-splash" class="hidden fixed inset-0 z-40 bg-amber-50/95 backdrop-blur-md flex flex-col items-center justify-center">
+            <span id="splash-box-title" class="text-2xl text-amber-800 font-black tracking-wider mb-2 whitespace-nowrap overflow-hidden text-ellipsis max-w-full px-4">🥣 膳糧食物箱</span>
+            <h1 id="splash-wave-text" class="text-6xl md:text-8xl font-black text-amber-900 drop-shadow-md whitespace-nowrap">
+                第 1 波物資選擇
+            </h1>
+            <p class="text-xl text-amber-700 font-bold mt-4 animate-bounce whitespace-nowrap">⏱️ 每波倒數 5 秒！準備好手速！</p>
+        </div>
+
+        <!-- 大螢幕 - 遊戲主畫面 -->
+        <div id="view-game" class="hidden w-full h-full max-h-[92vh] grid grid-cols-1 md:grid-cols-12 gap-4 overflow-hidden">
             
-            <!-- 左側：排行榜 -->
-            <div class="md:col-span-4 lg:col-span-3 bg-white/80 border-2 border-amber-200 rounded-3xl p-3 backdrop-blur-xl flex flex-col justify-between overflow-hidden h-full shadow-lg">
+            <!-- 左側：實時分數排行榜 -->
+            <div class="md:col-span-4 lg:col-span-3 sun-card rounded-3xl p-4 flex flex-col justify-between overflow-hidden h-full">
                 <div class="overflow-hidden flex flex-col h-full">
-                    <h3 class="text-emerald-800 text-xl md:text-2xl font-black mb-3 flex items-center justify-between flex-shrink-0 border-b border-amber-200 pb-2">
-                        <span>🌸 實時全場得分榜</span>
-                        <span id="game-total-players-badge" class="text-base bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full border border-emerald-300">0 人</span>
+                    <h3 class="text-amber-900 text-xl font-black mb-3 flex items-center justify-between flex-shrink-0 border-b border-amber-200 pb-2">
+                        <span>🏆 志工積分排行榜</span>
+                        <span id="game-total-players-badge" class="text-xs bg-amber-100 text-amber-900 px-3 py-1 rounded-full border border-amber-300">0 人</span>
                     </h3>
-                    <div id="players-dashboard" class="flex flex-col space-y-2.5 overflow-hidden flex-grow"></div>
+                    <div id="players-dashboard" class="flex flex-col space-y-2 overflow-hidden flex-grow"></div>
+                </div>
+                <div class="mt-2 pt-2 border-t border-amber-200 text-center flex-shrink-0">
+                    <span id="round-status-hint" class="text-emerald-700 font-black text-sm">✨ 請在手機端選擇合格物資！</span>
                 </div>
             </div>
 
-            <!-- 右側：遊戲畫布 -->
-            <div class="md:col-span-8 lg:col-span-9 bg-white/90 border-2 border-emerald-300 rounded-3xl p-2 shadow-2xl backdrop-blur-xl flex flex-col items-center justify-center relative overflow-hidden h-full">
-                <div id="game-hud" class="absolute top-4 left-6 right-6 flex justify-between items-center z-10 pointer-events-none">
-                    <span id="remaining-food-badge" class="text-2xl font-black text-amber-900 bg-amber-100/90 px-4 py-2 rounded-2xl border-2 border-amber-300 shadow">
-                        🍎 剩餘物資：0/0
-                    </span>
-                    <span id="game-status-hint" class="text-emerald-800 font-bold text-xl bg-emerald-100/90 px-4 py-2 rounded-2xl border-2 border-emerald-300 shadow">
-                        接取正確物資加分，不合適物資爆破扣分！
-                    </span>
+            <!-- 右側 (中間)：大螢幕答題區 -->
+            <div class="md:col-span-8 lg:col-span-9 rounded-3xl p-6 flex flex-col justify-start items-center overflow-hidden h-full relative">
+                
+                <!-- 頂部波次與倒數條 -->
+                <div class="w-full flex-shrink-0 z-10 mb-3">
+                    <div class="w-full bg-amber-100/80 h-4 rounded-full mb-3 overflow-hidden border border-amber-300/50 shadow-inner">
+                        <div id="timer-bar" class="h-full bg-gradient-to-r from-amber-400 to-orange-500 w-full transition-all duration-100 ease-linear"></div>
+                    </div>
+
+                    <div class="flex justify-between items-center">
+                        <div class="flex items-center gap-3">
+                            <span id="box-type-badge" class="bg-amber-500 text-white font-black text-base px-4 py-1.5 rounded-full shadow-md whitespace-nowrap">
+                                🥣 膳糧食物箱
+                            </span>
+                            <span id="wave-number" class="text-amber-950 font-black text-2xl md:text-3xl tracking-wide whitespace-nowrap">
+                                第 1 箱 - 第 1 / 4 波
+                            </span>
+                        </div>
+                        <span id="timer-text" class="text-4xl font-black text-orange-600 animate-pulse whitespace-nowrap">⏱ 5s</span>
+                    </div>
                 </div>
-                <canvas id="gameCanvas" class="w-full h-full rounded-2xl bg-gradient-to-b from-sky-100 via-amber-50 to-emerald-100 border border-emerald-200"></canvas>
+
+                <!-- 中央區域：食物箱與題目任務指示區塊 -->
+                <div class="relative flex-grow flex flex-col items-center justify-center w-full my-auto overflow-hidden">
+                    
+                    <!-- 上方：中央圖案 (食物箱展示區) -->
+                    <div class="relative flex items-center justify-center max-w-full">
+                        
+                        <!-- 食物箱 -->
+                        <div id="main-big-box" class="w-[21.6rem] md:w-[28.8rem] max-h-[36vh] max-w-[90vw] flex flex-col items-center justify-center relative box-active z-10 p-1">
+                            <div class="text-[9rem] md:text-[11.4rem] leading-none mb-2 drop-shadow-2xl">📦</div>
+                            
+                            <!-- 文字完整顯示 + 若有年齡層則顯示在下一行 -->
+                            <div class="flex flex-col items-center justify-center text-center">
+                                <span id="big-box-title" class="text-2xl md:text-4xl font-black text-amber-950 tracking-wider whitespace-nowrap">
+                                    膳糧食物箱
+                                </span>
+                                <span id="big-box-age" class="text-lg md:text-2xl font-bold text-amber-800 mt-1 whitespace-nowrap">
+                                    (3-15歲)
+                                </span>
+                            </div>
+
+                            <div id="big-box-items-preview" class="flex flex-wrap gap-1.5 justify-center mt-2 max-w-[95%] max-h-[85px] overflow-y-auto">
+                                <!-- 已放入箱子物資動態縮圖 -->
+                            </div>
+                        </div>
+
+                        <!-- 右側：「答對+1」跳躍效果顯示區 -->
+                        <div id="correct-badge-container" class="absolute right-0 md:right-2 top-1/2 -translate-y-1/2 flex flex-col items-center justify-center pointer-events-none z-30 max-w-xs">
+                            <!-- JS 動態插入跳躍動畫的「答對+1」 -->
+                        </div>
+                    </div>
+
+                    <!-- 下方：題目任務指示與說明 (位置移動至食物箱下方，保留 mt-8 間距避免重疊) -->
+                    <div class="w-full max-w-3xl bg-white/80 backdrop-blur-sm rounded-2xl p-4 border-2 border-amber-200 text-center shadow-md overflow-hidden mt-8 z-20 flex-shrink-0">
+                        <p id="box-instruction" class="text-lg md:text-xl font-black text-amber-900 whitespace-nowrap overflow-hidden text-ellipsis">
+                            任務：請從手機點選合格物資放進箱子！
+                        </p>
+                    </div>
+
+                </div>
+
             </div>
         </div>
 
-        <!-- 大螢幕 - 最後得獎頒獎畫面 -->
-        <div id="view-result" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-md p-6">
-            <div class="w-full max-w-7xl h-full max-h-[90vh] bg-gradient-to-b from-amber-50 to-orange-50 border-4 border-amber-300 rounded-3xl p-6 md:p-8 flex flex-col justify-between shadow-2xl overflow-hidden relative">
+        <!-- 大螢幕 - 最終頒獎結算畫面 (已整合問答遊戲頒獎視覺與煙火風格) -->
+        <div id="view-result" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-xl p-6">
+            <div class="w-full max-w-7xl h-full max-h-[90vh] bg-slate-900 border-2 border-amber-400 rounded-3xl p-6 md:p-8 flex flex-col justify-between shadow-2xl overflow-hidden relative">
                 
-                <h2 class="text-3xl md:text-5xl font-black text-center text-transparent bg-clip-text bg-gradient-to-r from-amber-600 via-rose-500 to-emerald-600 mb-2 flex-shrink-0 drop-shadow-sm">
-                    🏆 最終春日頒獎典禮 🏆
+                <h2 class="text-3xl md:text-5xl font-black text-center text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-yellow-400 to-amber-500 mb-2 flex-shrink-0 whitespace-nowrap">
+                    🏆 志工打包大挑戰 榮譽頒獎 🏆
                 </h2>
 
                 <div class="grid grid-cols-1 md:grid-cols-12 gap-6 flex-grow overflow-hidden my-2">
                     
-                    <div class="md:col-span-3 bg-white/80 rounded-2xl p-4 border border-amber-200 flex flex-col justify-between overflow-hidden shadow-sm">
-                        <div class="flex justify-between items-center mb-3 border-b border-amber-200 pb-2 flex-shrink-0">
-                            <span class="font-black text-xl md:text-2xl text-amber-800">全場排名 (左)</span>
-                            <span id="result-left-count" class="text-xs bg-amber-100 text-amber-800 px-2.5 py-1 rounded-full font-bold">0 人</span>
+                    <div class="md:col-span-3 bg-slate-950/60 rounded-2xl p-4 border border-slate-800 flex flex-col justify-between overflow-hidden">
+                        <div class="flex justify-between items-center mb-3 border-b border-slate-800 pb-2 flex-shrink-0">
+                            <span class="font-black text-xl md:text-2xl text-amber-300">全場排名 (左)</span>
+                            <span id="result-left-count" class="text-xs bg-slate-800 text-amber-400 px-2.5 py-1 rounded-full font-bold">0 人</span>
                         </div>
                         <div id="result-left-list" class="space-y-2 overflow-hidden pr-1 flex-grow"></div>
                     </div>
 
-                    <div class="md:col-span-6 bg-gradient-to-b from-amber-100/60 to-rose-100/60 border-2 border-amber-300 rounded-2xl p-6 flex flex-col items-center justify-center text-center overflow-hidden shadow-inner">
+                    <div class="md:col-span-6 bg-amber-950/20 border-2 border-amber-500/40 rounded-2xl p-6 flex flex-col items-center justify-center text-center overflow-hidden shadow-inner">
                         <div class="w-full flex flex-col items-center">
-                            <span class="text-amber-800 font-black tracking-widest text-base mb-3 bg-white/80 px-4 py-1 rounded-full border border-amber-300">✨ TOP 3 WINNERS ✨</span>
+                            <span class="text-amber-400 font-black tracking-widest text-sm mb-3">TOP 3 WINNERS</span>
                             <div id="top3-container" class="w-full flex flex-col items-center space-y-4 my-auto"></div>
                         </div>
                     </div>
 
-                    <div class="md:col-span-3 bg-white/80 rounded-2xl p-4 border border-amber-200 flex flex-col justify-between overflow-hidden shadow-sm">
-                        <div class="flex justify-between items-center mb-3 border-b border-amber-200 pb-2 flex-shrink-0">
-                            <span class="font-black text-xl md:text-2xl text-amber-800">全場排名 (右)</span>
-                            <span id="result-right-count" class="text-xs bg-amber-100 text-amber-800 px-2.5 py-1 rounded-full font-bold">0 人</span>
+                    <div class="md:col-span-3 bg-slate-950/60 rounded-2xl p-4 border border-slate-800 flex flex-col justify-between overflow-hidden">
+                        <div class="flex justify-between items-center mb-3 border-b border-slate-800 pb-2 flex-shrink-0">
+                            <span class="font-black text-xl md:text-2xl text-amber-300">全場排名 (右)</span>
+                            <span id="result-right-count" class="text-xs bg-slate-800 text-amber-400 px-2.5 py-1 rounded-full font-bold">0 人</span>
                         </div>
                         <div id="result-right-list" class="space-y-2 overflow-hidden pr-1 flex-grow"></div>
                     </div>
@@ -313,85 +357,17 @@
 
     </main>
 
-    <footer id="main-footer" class="w-full py-2 px-4 border-t border-amber-200/60 bg-white/60 text-center text-slate-600 text-sm flex-shrink-0">
-        安得烈食物銀行 關懷弱勢・愛合格不浪費 | 食物接接樂互動遊戲
+    <footer id="main-footer" class="w-full py-1.5 px-4 rounded-xl sun-card text-center text-amber-800 text-xs flex-shrink-0 font-bold mt-2 whitespace-nowrap">
+        安得烈食物銀行 關懷弱勢・愛合格不浪費 | 志工服務體驗互動遊戲
     </footer>
 
     <script>
-        // 動物角色清單
-        const animalAvatars = ['🐶', '🐱', '🐭', '🐹', '🐰', '🦊', '🐻', '🐼', '🐨', '🐯', '🦁', '🐮', '🐷', '🐸', '🐵', '🐔', '🐧', '🐦', '🦄'];
-
-        // 正確物資選單（基本分+2分）
-        const validFoodPool = [
-            { name: "嬰兒奶粉", icon: "🍼", score: 2 },
-            { name: "嬰幼兒尿布", icon: "👶", score: 2 },
-            { name: "嬰幼兒濕紙巾", icon: "🧻", score: 2 },
-            { name: "衛生紙", icon: "🧻", score: 2 },
-            { name: "保久乳", icon: "🥛", score: 2 },
-            { name: "肉鬆", icon: "🥫", score: 2 },
-            { name: "沖泡麥片", icon: "🥣", score: 2 },
-            { name: "肉類罐頭", icon: "🥫", score: 2 },
-            { name: "玉米罐頭", icon: "🌽", score: 2 },
-            { name: "麵條", icon: "🍜", score: 2 },
-            { name: "肉類調理包", icon: "🍲", score: 2 },
-            { name: "白米", icon: "🍚", score: 2 },
-            { name: "素肉鬆", icon: "🌱", score: 2 },
-            { name: "素食調理包", icon: "🥗", score: 2 },
-            { name: "滴雞精", icon: "🐔", score: 2 },
-            { name: "軟質粥品", icon: "🥣", score: 2 },
-            { name: "易咬餅乾", icon: "🍪", score: 2 },
-            { name: "醫囑營養品", icon: "💊", score: 2 },
-            { name: "尿布", icon: "👶", score: 2 },
-            { name: "專案物資", icon: "📦", score: 2 },
-            { name: "養生珍菇雞湯", icon: "🍲", score: 2 },
-            { name: "花生豬腳", icon: "🍖", score: 2 },
-            { name: "佛跳牆", icon: "🍲", score: 2 },
-            { name: "紅燒羊肉爐", icon: "🍲", score: 2 },
-            { name: "筍乾焢肉", icon: "🥩", score: 2 },
-            { name: "櫻花蝦米糕", icon: "🍚", score: 2 }
-        ];
-
-        // 不可放入物資選單（基本分-1分）
-        const invalidFoodPool = [
-            { name: "辣味豆干", icon: "🌶️", score: -1 },
-            { name: "辣味罐頭", icon: "🌶️", score: -1 },
-            { name: "玻璃罐頭", icon: "🫙", score: -1 },
-            { name: "辣味調理包", icon: "🌶️", score: -1 },
-            { name: "麻辣鴨血", icon: "🥘", score: -1 },
-            { name: "咖啡", icon: "☕", score: -1 },
-            { name: "洋芋片", icon: "🥔", score: -1 },
-            { name: "泡麵", icon: "🍜", score: -1 },
-            { name: "碳酸飲料", icon: "🥤", score: -1 },
-            { name: "生鮮蔬菜", icon: "🥬", score: -1 },
-            { name: "醬瓜罐頭", icon: "🫙", score: -1 }
-        ];
-
-        let peer = null;
-        let hostConn = null;
-        let players = [];
-        let myPlayerId = null;
-        let myAvatar = '🐱';
-
-        // 控制參數 (傾斜與靈敏度)
-        let zeroGamma = 0; 
-        let zeroBeta = 0;  
-        let isOrientationBound = false;
-        let sensitivityMultiplier = 1.0;
-
-        // 遊戲運行設定參數
-        let totalFoodToSpawn = 40;
-        let foodDropSpeed = 3.5;
-        let spawnedFoodCount = 0;
-        let activeFoods = [];
-        let scorePopups = []; // 儲存躍動得分特效 (+2 / -1)
-        let explosionParticles = []; // 儲存爆炸特效粒子
-        let isGameRunning = false;
-
-        // Canvas 設定
-        let canvas, ctx;
-
-        // 音效 Web Audio API 系統
+        /* ==========================================================================
+           1. 音效控制 (Web Audio API - 心跳急促聲 + 答對歡快跳躍音效 + 馬力歐頒獎音樂)
+           ========================================================================== */
         let audioCtx = null;
+        let currentBgmType = null;
+        let bgmTimeoutId = null;
 
         function getAudioContext() {
             if (!audioCtx) {
@@ -403,114 +379,255 @@
             return audioCtx;
         }
 
-        // 播放吃到正確食物的清脆躍動音效
-        function playScoreSound() {
+        function playSingleNote(freq, duration, type = 'square', gainValue = 0.12) {
             try {
                 const ctx = getAudioContext();
-                const now = ctx.currentTime;
+                if (!ctx || freq <= 0) return;
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, ctx.currentTime);
+                gain.gain.setValueAtTime(gainValue, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration * 0.95);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + duration);
+            } catch (e) {
+                console.log('Audio Error:', e);
+            }
+        }
+
+        // 來自問答遊戲的馬力歐頒獎勝利音樂
+        function playMarioVictoryFanfare() {
+            getAudioContext();
+            stopBgm();
+            currentBgmType = 'victory';
+
+            const N = {
+                G3: 196.00, C4: 261.63, E4: 329.63, G4: 392.00,
+                C5: 523.25, E5: 659.25, G5: 783.99, A5: 880.00, B5: 987.77,
+                A5b: 830.61, B5b: 932.33
+            };
+
+            const fanfare = [
+                { f: N.G3, d: 0.2 }, { f: N.C4, d: 0.2 }, { f: N.E4, d: 0.2 },
+                { f: N.G4, d: 0.2 }, { f: N.C5, d: 0.2 }, { f: N.E5, d: 0.2 },
+                { f: N.G5, d: 0.6 }, { f: N.E5, d: 0.6 },
                 
-                const osc = ctx.createOscillator();
-                const gain = ctx.createGain();
+                { f: N.A5b, d: 0.25 }, { f: N.C5, d: 0.25 }, { f: N.E5, d: 0.25 }, { f: N.A5b, d: 0.6 },
+                { f: N.B5b, d: 0.25 }, { f: N.D5 || 587.33, d: 0.25 }, { f: N.F5 || 698.46, d: 0.25 }, { f: N.B5b, d: 0.6 },
+                
+                { f: N.C5, d: 0.25 }, { f: N.E5, d: 0.25 }, { f: N.G5, d: 0.25 }, { f: N.C6 || 1046.50, d: 2.5 }
+            ];
 
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(523.25, now); // C5
-                osc.frequency.exponentialRampToValueAtTime(1046.50, now + 0.15); // C6
+            let i = 0;
+            function playNext() {
+                if (i >= fanfare.length || currentBgmType !== 'victory') return;
+                const note = fanfare[i];
+                playSingleNote(note.f, note.d, 'square', 0.22);
+                i++;
+                bgmTimeoutId = setTimeout(playNext, note.d * 1000);
+            }
+            playNext();
+        }
 
-                gain.gain.setValueAtTime(0.3, now);
-                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
-
-                osc.connect(gain);
-                gain.connect(ctx.destination);
-
-                osc.start(now);
-                osc.stop(now + 0.2);
-            } catch (e) {
-                console.error(e);
+        function stopBgm() {
+            currentBgmType = null;
+            if (bgmTimeoutId) {
+                clearTimeout(bgmTimeoutId);
+                bgmTimeoutId = null;
             }
         }
 
-        // 播放吃到不可放入食物時的爆炸音效
-        function playExplosionSound() {
+        // 模擬真實心跳急促聲：雙聲（Lub-Dub），每半秒觸發一組
+        function playHeartbeatSound() {
             try {
                 const ctx = getAudioContext();
                 const now = ctx.currentTime;
 
-                // 雜訊緩衝區產生低沈爆破音
-                const bufferSize = ctx.sampleRate * 0.3; 
-                const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-                const data = buffer.getChannelData(0);
-                for (let i = 0; i < bufferSize; i++) {
-                    data[i] = Math.random() * 2 - 1;
-                }
+                // --- 第一聲 Lub (較低沉、響亮) ---
+                const osc1 = ctx.createOscillator();
+                const gain1 = ctx.createGain();
+                osc1.type = 'sine';
+                osc1.frequency.setValueAtTime(120, now);
+                osc1.frequency.exponentialRampToValueAtTime(45, now + 0.08);
 
-                const noise = ctx.createBufferSource();
-                noise.buffer = buffer;
+                gain1.gain.setValueAtTime(0.8, now);
+                gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.09);
 
-                const filter = ctx.createBiquadFilter();
-                filter.type = 'lowpass';
-                filter.frequency.setValueAtTime(800, now);
-                filter.frequency.exponentialRampToValueAtTime(50, now + 0.3);
+                osc1.connect(gain1);
+                gain1.connect(ctx.destination);
+                osc1.start(now);
+                osc1.stop(now + 0.09);
 
-                const gain = ctx.createGain();
-                gain.gain.setValueAtTime(0.8, now);
-                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                // --- 第二聲 Dub (間隔 0.12 秒，音高略高、時間稍短) ---
+                const osc2 = ctx.createOscillator();
+                const gain2 = ctx.createGain();
+                osc2.type = 'sine';
+                osc2.frequency.setValueAtTime(140, now + 0.12);
+                osc2.frequency.exponentialRampToValueAtTime(50, now + 0.19);
 
-                noise.connect(filter);
-                filter.connect(gain);
-                gain.connect(ctx.destination);
+                gain2.gain.setValueAtTime(0.6, now + 0.12);
+                gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.19);
 
-                noise.start(now);
-                noise.stop(now + 0.3);
+                osc2.connect(gain2);
+                gain2.connect(ctx.destination);
+                osc2.start(now + 0.12);
+                osc2.stop(now + 0.19);
+
             } catch (e) {
-                console.error(e);
+                console.log('Audio Error:', e);
             }
         }
 
-        // 播放煙火爆炸聲效
-        function playFireworkBoomSound() {
+        // 答對「跳躍音效」(清脆雙音階跳躍效果)
+        function playCorrectJumpSound() {
             try {
                 const ctx = getAudioContext();
-                const now = ctx.currentTime;
+                
+                // 第一音：高音 G5
+                const osc1 = ctx.createOscillator();
+                const gain1 = ctx.createGain();
+                osc1.type = 'sine';
+                osc1.frequency.setValueAtTime(783.99, ctx.currentTime); 
+                gain1.gain.setValueAtTime(0.5, ctx.currentTime);
+                gain1.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.12);
+                osc1.connect(gain1);
+                gain1.connect(ctx.destination);
+                osc1.start(ctx.currentTime);
+                osc1.stop(ctx.currentTime + 0.12);
 
-                const osc = ctx.createOscillator();
-                const gain = ctx.createGain();
-
-                osc.type = 'triangle';
-                osc.frequency.setValueAtTime(160, now);
-                osc.frequency.exponentialRampToValueAtTime(40, now + 0.4);
-
-                gain.gain.setValueAtTime(0.5, now);
-                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
-
-                osc.connect(gain);
-                gain.connect(ctx.destination);
-
-                osc.start(now);
-                osc.stop(now + 0.4);
+                // 第二音：跳躍至超高音 C6
+                const osc2 = ctx.createOscillator();
+                const gain2 = ctx.createGain();
+                osc2.type = 'sine';
+                osc2.frequency.setValueAtTime(1046.50, ctx.currentTime + 0.08); 
+                gain2.gain.setValueAtTime(0.6, ctx.currentTime + 0.08);
+                gain2.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.28);
+                osc2.connect(gain2);
+                gain2.connect(ctx.destination);
+                osc2.start(ctx.currentTime + 0.08);
+                osc2.stop(ctx.currentTime + 0.28);
             } catch (e) {
-                console.error(e);
+                console.log('Audio Error:', e);
             }
         }
 
-        // 產生爆炸粒子特效
-        function createExplosion(x, y) {
-            const colors = ['#f43f5e', '#f97316', '#eab308', '#ef4444', '#ffffff'];
-            for (let i = 0; i < 25; i++) {
-                const angle = Math.random() * Math.PI * 2;
-                const speed = 2 + Math.random() * 6;
-                explosionParticles.push({
-                    x: x,
-                    y: y,
-                    vx: Math.cos(angle) * speed,
-                    vy: Math.sin(angle) * speed,
-                    size: 3 + Math.random() * 5,
-                    color: colors[Math.floor(Math.random() * colors.length)],
-                    alpha: 1.0,
-                    decay: 0.03 + Math.random() * 0.02
-                });
+        /* ==========================================================================
+           2. 物資庫與 7 種食物箱資料結構 (帶有年齡層拆分)
+           ========================================================================== */
+        
+        const FOOD_BOXES = [
+            {
+                id: 'baby',
+                title: '嬰兒物資箱',
+                age: '(0-3歲)',
+                name: '嬰兒物資箱(0-3歲)',
+                allowed: ['嬰兒奶粉', '嬰幼兒尿布', '嬰幼兒濕紙巾', '衛生紙'],
+                icon: '🍼'
+            },
+            {
+                id: 'kid',
+                title: '膳糧食物箱',
+                age: '(3-15歲)',
+                name: '膳糧食物箱(3-15歲)',
+                allowed: ['保久乳', '肉鬆', '沖泡麥片', '肉類罐頭', '玉米罐頭', '麵條', '肉類調理包', '白米'],
+                icon: '🥣'
+            },
+            {
+                id: 'veg',
+                title: '素食食物箱',
+                age: '',
+                name: '素食食物箱',
+                allowed: ['素肉鬆', '沖泡麥片', '玉米罐頭', '麵條', '素食調理包', '白米'],
+                icon: '🥗'
+            },
+            {
+                id: 'elder',
+                title: '長青食物箱',
+                age: '(65-80歲)',
+                name: '長青食物箱(65-80歲)',
+                allowed: ['白米', '麵條', '滴雞精', '軟質粥品(少油低鈉)', '沖泡麥片', '易咬餅乾'],
+                icon: '👵'
+            },
+            {
+                id: 'pine',
+                title: '松柏食物箱',
+                age: '(80歲以上)',
+                name: '松柏食物箱(80歲以上)',
+                allowed: ['滴雞精', '軟質粥品(少油低鈉)', '沖泡麥片', '易咬餅乾'],
+                icon: '🧓'
+            },
+            {
+                id: 'project',
+                title: '專案食物箱',
+                age: '',
+                name: '專案食物箱',
+                allowed: ['醫囑營養品', '尿布', '衛生紙', '專案物資'],
+                icon: '🏥'
+            },
+            {
+                id: 'cny',
+                title: '年菜食物箱',
+                age: '',
+                name: '年菜食物箱',
+                allowed: ['養生珍菇雞湯', '花生豬腳', '佛跳牆', '紅燒羊肉爐', '筍乾焢肉', '櫻花蝦米糕'],
+                icon: '🧧'
             }
+        ];
+
+        const FORBIDDEN_ITEMS = [
+            '辣味豆干', '辣味罐頭', '玻璃罐頭', '辣味調理包', '麻辣鴨血', 
+            '咖啡', '洋芋片', '泡麵', '碳酸飲料', '生鮮蔬菜', '醬瓜罐頭'
+        ];
+
+        const ITEM_ICONS = {
+            '嬰兒奶粉': '🍼', '嬰幼兒尿布': '👶', '嬰幼兒濕紙巾': '🧻', '衛生紙': '🧻',
+            '保久乳': '🥛', '肉鬆': '🥫', '沖泡麥片': '🥣', '肉類罐頭': '🍖', '玉米罐頭': '🌽',
+            '麵條': '🍜', '肉類調理包': '🍛', '白米': '🌾', '素肉鬆': '🥫', '素食調理包': '🥗',
+            '滴雞精': '🐓', '軟質粥品(少油低鈉)': '🍲', '易咬餅乾': '🍪', '醫囑營養品': '🩺',
+            '尿布': '👶', '專案物資': '🎁', 
+            '養生珍菇雞湯': '🍲', '花生豬腳': '🍖', '佛跳牆': '🍲', '紅燒羊肉爐': '🍲', '筍乾焢肉': '🥩', '櫻花蝦米糕': '🍚',
+            
+            '辣味豆干': '🌶', '辣味罐頭': '🌶', '玻璃罐頭': '🫙', '辣味調理包': '🌶️',
+            '麻辣鴨血': '🍲', '咖啡': '☕', '洋芋片': '🥔', '泡麵': '🍜', '碳酸飲料': '🥤',
+            '生鮮蔬菜': '🥬', '醬瓜罐頭': '🫙'
+        };
+
+        function getItemIcon(itemName) {
+            return ITEM_ICONS[itemName] || '📦';
         }
 
+        function getRandomInt(min, max) {
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+
+        /* ==========================================================================
+           3. 全局遊戲狀態與變數
+           ========================================================================== */
+        let peer = null;
+        let hostConn = null;
+        let players = [];
+        let myPlayerId = null;
+
+        let totalBoxCount = 3;
+        let currentBoxIndex = 0;
+        let currentWaveIndex = 0;
+        let currentBoxData = null;
+        let usedAllowedInCurrentBox = [];
+
+        let timerInterval = null;
+        let aiTimeouts = [];
+        let isTransitioning = false;
+        let waveTimeLeft = 5;
+        let lastPlayedHalfSecStep = -1;
+
+        let mobileHasAnswered = false;
+
+        /* ==========================================================================
+           4. PeerJS 網路連線邏輯
+           ========================================================================== */
         window.onload = () => {
             const urlParams = new URLSearchParams(window.location.search);
             const hostId = urlParams.get('host');
@@ -546,11 +663,21 @@
                     conn.on('data', (data) => {
                         if (data.type === 'JOIN') {
                             addPlayer(data.name, conn, data.playerId);
-                        } else if (data.type === 'TILT') {
-                            const p = players.find(player => player.id === data.playerId);
-                            if (p) {
-                                p.x = Math.max(0.05, Math.min(0.95, p.x + (data.deltaX || 0)));
-                                p.y = Math.max(0.20, Math.min(0.90, p.y + (data.deltaY || 0)));
+                        } else if (data.type === 'SUBMIT_WAVE_CHOICE') {
+                            const target = players.find(p => p.id === data.playerId);
+                            if (target && !target.waveAnswered) {
+                                target.waveAnswered = true;
+                                target.choiceIndex = data.choiceIndex;
+                                target.timeLeft = waveTimeLeft;
+
+                                // 若答對，僅在大螢幕觸發跳躍的「答對+1」動畫與跳躍音效（不顯示答案文字）
+                                const chosenOpt = target.currentWaveOptions[data.choiceIndex];
+                                if (chosenOpt && chosenOpt.isCorrect) {
+                                    triggerJumpCorrectBadge();
+                                }
+
+                                renderPlayersDashboard();
+                                checkAllWaveAnswered();
                             }
                         }
                     });
@@ -563,6 +690,27 @@
             });
         }
 
+        // 觸發「答對+1」跳躍顯示效果與音效
+        function triggerJumpCorrectBadge() {
+            // 播放答對跳躍音效
+            playCorrectJumpSound();
+
+            // 大螢幕出現跳躍效果的「答對+1」
+            const container = document.getElementById('correct-badge-container');
+            const badge = document.createElement('div');
+            badge.className = 'bg-gradient-to-r from-emerald-400 to-green-500 text-white font-black text-2xl md:text-3xl px-4 py-2 rounded-full shadow-2xl border-2 border-white flex items-center justify-center animate-jump-float whitespace-nowrap drop-shadow-2xl';
+            badge.innerHTML = `<span>答對 +1</span>`;
+            
+            container.appendChild(badge);
+
+            // 動態移除元素
+            setTimeout(() => {
+                if (badge.parentNode) {
+                    badge.parentNode.removeChild(badge);
+                }
+            }, 900);
+        }
+
         function initMobileController(hostId) {
             peer = new Peer();
             peer.on('open', (id) => {
@@ -570,173 +718,27 @@
                 hostConn = peer.connect(hostId);
 
                 hostConn.on('open', () => {
-                    document.getElementById('player-mobile-name').innerText = "已連線至大螢幕";
+                    document.getElementById('mobile-status-text').innerText = "✓ 已成功連線至大螢幕！";
                 });
 
                 hostConn.on('data', (data) => {
-                    if (data.type === 'ASSIGN_AVATAR') {
-                        myAvatar = data.avatar;
-                        const avatarEl = document.getElementById('mobile-avatar-display');
-                        avatarEl.innerText = myAvatar;
-                        avatarEl.classList.remove('hidden');
-                    } else if (data.type === 'GAME_START') {
-                        document.getElementById('mobile-status-text').innerText = '🎮 遊戲開始！使用指尖滑動或傾斜手機操控移動！';
-                        document.getElementById('mobile-controls').classList.remove('hidden');
-                        document.getElementById('mobile-controls').classList.add('flex');
-                        startOrientationListener();
-                        initTouchpadControls();
+                    if (data.type === 'GAME_START') {
+                        document.getElementById('mobile-status-text').innerText = '🎮 挑戰開始！請選擇合格物資！';
+                    } else if (data.type === 'WAVE_START') {
+                        mobileHasAnswered = false;
+                        document.getElementById('mobile-box-num').innerText = `第 ${data.boxIndex + 1}/${data.totalBoxes} 箱`;
+                        document.getElementById('mobile-wave-num').innerText = `第 ${data.waveIndex + 1}/4 波`;
+                        document.getElementById('mobile-status-text').innerText = '⏱ 請點選上方物資進行搶答！';
+                        renderMobileOptions(data.options);
                     } else if (data.type === 'FINAL_RESULT') {
                         showMobileFinalResult(data.rank, data.score, data.totalPlayers);
                     }
                 });
             });
-
-            document.getElementById('btn-recalibrate').addEventListener('click', () => {
-                zeroGamma = currentGamma;
-                zeroBeta = currentBeta;
-            });
-
-            document.getElementById('select-sensitivity').addEventListener('change', (e) => {
-                sensitivityMultiplier = parseFloat(e.target.value) || 1.0;
-            });
         }
-
-        function initTouchpadControls() {
-            const touchpad = document.getElementById('touchpad-area');
-            const pointer = document.getElementById('touch-pointer');
-            const hint = document.getElementById('touchpad-hint');
-
-            let isTouching = false;
-            let lastTouchX = 0;
-            let lastTouchY = 0;
-
-            const handleStart = (clientX, clientY) => {
-                isTouching = true;
-                lastTouchX = clientX;
-                lastTouchY = clientY;
-                if (hint) hint.classList.add('hidden');
-                updatePointerPosition(clientX, clientY);
-            };
-
-            const handleMove = (clientX, clientY) => {
-                if (!isTouching) return;
-
-                const deltaX = (clientX - lastTouchX) * 0.002 * sensitivityMultiplier;
-                const deltaY = (clientY - lastTouchY) * 0.002 * sensitivityMultiplier;
-
-                lastTouchX = clientX;
-                lastTouchY = clientY;
-
-                updatePointerPosition(clientX, clientY);
-
-                if (hostConn && hostConn.open && (Math.abs(deltaX) > 0.0001 || Math.abs(deltaY) > 0.0001)) {
-                    hostConn.send({
-                        type: 'TILT',
-                        playerId: myPlayerId,
-                        deltaX: deltaX,
-                        deltaY: deltaY
-                    });
-                }
-            };
-
-            const handleEnd = () => {
-                isTouching = false;
-                if (pointer) {
-                    pointer.style.left = '50%';
-                    pointer.style.top = '50%';
-                }
-            };
-
-            const updatePointerPosition = (clientX, clientY) => {
-                if (!touchpad || !pointer) return;
-                const rect = touchpad.getBoundingClientRect();
-                const x = Math.max(0, Math.min(rect.width, clientX - rect.left));
-                const y = Math.max(0, Math.min(rect.height, clientY - rect.top));
-                pointer.style.left = `${x}px`;
-                pointer.style.top = `${y}px`;
-            };
-
-            touchpad.addEventListener('touchstart', (e) => {
-                if (e.touches.length > 0) handleStart(e.touches[0].clientX, e.touches[0].clientY);
-            }, { passive: true });
-
-            touchpad.addEventListener('touchmove', (e) => {
-                if (e.touches.length > 0) handleMove(e.touches[0].clientX, e.touches[0].clientY);
-            }, { passive: true });
-
-            touchpad.addEventListener('touchend', handleEnd, { passive: true });
-
-            touchpad.addEventListener('mousedown', (e) => handleStart(e.clientX, e.clientY));
-            window.addEventListener('mousemove', (e) => handleMove(e.clientX, e.clientY));
-            window.addEventListener('mouseup', handleEnd);
-        }
-
-        let currentGamma = 0;
-        let currentBeta = 0;
-
-        function startOrientationListener() {
-            if (isOrientationBound) return;
-
-            const handleOrientation = (e) => {
-                let gamma = e.gamma || 0; 
-                let beta = e.beta || 0;   
-
-                currentGamma = gamma;
-                currentBeta = beta;
-
-                const relativeGamma = Math.max(-30, Math.min(30, gamma - zeroGamma));
-                const relativeBeta = Math.max(-30, Math.min(30, beta - zeroBeta));
-                
-                const angleText = document.getElementById('tilt-angle-text');
-                if (angleText) {
-                    angleText.innerText = `${Math.round(relativeGamma)}°, ${Math.round(relativeBeta)}°`;
-                }
-
-                if (hostConn && hostConn.open && (Math.abs(relativeGamma) > 2 || Math.abs(relativeBeta) > 2)) {
-                    const deltaX = (relativeGamma / 30) * 0.025 * sensitivityMultiplier;
-                    const deltaY = (relativeBeta / 30) * 0.025 * sensitivityMultiplier;
-                    hostConn.send({ 
-                        type: 'TILT', 
-                        playerId: myPlayerId, 
-                        deltaX: deltaX,
-                        deltaY: deltaY 
-                    });
-                }
-            };
-
-            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-                DeviceOrientationEvent.requestPermission().then(response => {
-                    if (response === 'granted') {
-                        window.addEventListener('deviceorientation', handleOrientation);
-                        isOrientationBound = true;
-                    }
-                }).catch(console.error);
-            } else {
-                window.addEventListener('deviceorientation', handleOrientation);
-                isOrientationBound = true;
-            }
-        }
-
-        document.getElementById('btn-mobile-join').addEventListener('click', () => {
-            const name = document.getElementById('mobile-name-input').value.trim();
-            if (!name) return alert('請輸入暱稱！');
-
-            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-                DeviceOrientationEvent.requestPermission().catch(() => {});
-            }
-
-            if (hostConn && hostConn.open) {
-                hostConn.send({ type: 'JOIN', name: name, playerId: myPlayerId });
-                document.getElementById('player-mobile-name').innerText = `玩家：${name}`;
-                document.getElementById('mobile-join-form').classList.add('hidden');
-                document.getElementById('mobile-status-text').innerText = '已成功進入大廳，等待開賽...';
-            }
-        });
 
         function showMobileFinalResult(rank, score, totalPlayers) {
-            document.getElementById('mobile-top-bar').classList.add('hidden');
-            document.getElementById('mobile-controls').classList.add('hidden');
-            document.getElementById('mobile-status-text').classList.add('hidden');
+            document.getElementById('mobile-game-panel').classList.add('hidden');
 
             const resultBox = document.getElementById('mobile-final-result');
             resultBox.classList.remove('hidden');
@@ -751,92 +753,99 @@
 
             if (rank === 1) {
                 iconEl.innerText = '🥇';
-                statusEl.innerText = '🎉 恭喜榮獲 全場總冠軍！';
+                statusEl.innerText = '🎉 恭喜榮獲 愛心包裝王！';
             } else if (rank === 2) {
                 iconEl.innerText = '🥈';
-                statusEl.innerText = '✨ 恭喜榮獲 亞軍殊榮！';
+                statusEl.innerText = '✨ 恭喜榮獲 亞軍志工！';
             } else if (rank === 3) {
                 iconEl.innerText = '🥉';
-                statusEl.innerText = '👏 恭喜榮獲 季軍佳績！';
+                statusEl.innerText = '👏 恭喜榮獲 季軍志工！';
             } else {
                 iconEl.innerText = '🏅';
-                statusEl.innerText = `感謝您的參與！表現相當精彩！`;
+                statusEl.innerText = `感謝您的熱情參與！表現相當出色！`;
             }
         }
 
-        function getRandomAvatar() {
-            return animalAvatars[Math.floor(Math.random() * animalAvatars.length)];
+        document.getElementById('btn-mobile-join').addEventListener('click', () => {
+            const name = document.getElementById('mobile-name-input').value.trim();
+            if (!name) return showToast('請輸入您的暱稱！');
+
+            if (hostConn && hostConn.open) {
+                hostConn.send({ type: 'JOIN', name: name, playerId: myPlayerId });
+                document.getElementById('mobile-user-name').innerText = name;
+                document.getElementById('mobile-join-form').classList.add('hidden');
+                document.getElementById('mobile-game-panel').classList.remove('hidden');
+                document.getElementById('mobile-game-panel').classList.add('flex');
+            }
+        });
+
+        // 手機端渲染物資選項按鈕
+        function renderMobileOptions(options) {
+            const container = document.getElementById('mobile-options-container');
+            container.innerHTML = '';
+
+            options.forEach((opt, idx) => {
+                const btn = document.createElement('button');
+                btn.className = 'w-full h-32 bg-white border-2 border-amber-300 hover:border-amber-500 rounded-2xl shadow-md flex flex-col items-center justify-center transition active:scale-95';
+                btn.innerHTML = `
+                    <span class="text-4xl">${opt.icon}</span>
+                    <span class="font-black text-amber-900 text-base mt-2 whitespace-nowrap overflow-hidden text-ellipsis max-w-full px-1">${opt.name}</span>
+                `;
+                btn.onclick = () => selectMobileOption(idx, btn);
+                container.appendChild(btn);
+            });
         }
 
+        function selectMobileOption(choiceIndex, btnEl) {
+            if (mobileHasAnswered) return;
+            mobileHasAnswered = true;
+
+            const allBtns = document.querySelectorAll('#mobile-options-container button');
+            allBtns.forEach(b => {
+                b.disabled = true;
+                b.classList.add('opacity-50');
+            });
+
+            btnEl.classList.remove('opacity-50');
+            btnEl.classList.add('border-emerald-500', 'bg-emerald-50', 'ring-2', 'ring-emerald-400');
+
+            document.getElementById('mobile-status-text').innerText = "✓ 已送出選擇，等待公布結果...";
+
+            if (hostConn && hostConn.open) {
+                hostConn.send({
+                    type: 'SUBMIT_WAVE_CHOICE',
+                    playerId: myPlayerId,
+                    choiceIndex: choiceIndex
+                });
+            }
+        }
+
+        /* ==========================================================================
+           5. 大廳與玩家管理
+           ========================================================================== */
         function addPlayer(name, conn, playerId) {
             if (players.some(p => p.id === playerId)) return;
-
-            const assignedAvatar = getRandomAvatar();
 
             const p = {
                 id: playerId,
                 name: name,
                 displayName: name,
-                avatar: assignedAvatar,
                 conn: conn,
                 isAI: false,
+                aiType: null,
                 score: 0,
-                x: 0.1 + Math.random() * 0.8,
-                y: 0.88                       
+                waveAnswered: false,
+                choiceIndex: null,
+                timeLeft: 0,
+                packedItems: [],
+                currentWaveOptions: []
             };
             players.push(p);
-
-            if (conn) {
-                conn.send({ type: 'ASSIGN_AVATAR', avatar: assignedAvatar });
-            }
-
             renderLobbyPlayers();
 
             if (players.length >= 1) {
                 document.getElementById('btn-start-game').classList.remove('hidden');
             }
-        }
-
-        document.getElementById('btn-start-game').addEventListener('click', () => {
-            // 按下開始遊戲按鈕時，必定播放台語歌曲「心花開」
-            const bgm = document.getElementById('bgm');
-            getAudioContext(); // 確保 Web Audio / HTML Audio 順利解鎖
-            if (bgm) {
-                bgm.currentTime = 0;
-                bgm.play().then(() => {
-                    console.log("背景音樂『心花開』播放成功");
-                }).catch(e => {
-                    console.warn("背景音樂播放攔截修復：", e);
-                });
-            }
-
-            finalizePlayersAndStart();
-        });
-
-        function finalizePlayersAndStart() {
-            totalFoodToSpawn = parseInt(document.getElementById('select-food-count').value, 10);
-            foodDropSpeed = parseFloat(document.getElementById('select-drop-speed').value);
-            const aiToAddCount = parseInt(document.getElementById('select-ai-count').value, 10);
-
-            const aiNames = ['🤖 智慧小安', '🤖 助人小傑'];
-
-            for (let i = 0; i < aiToAddCount; i++) {
-                const aiAvatar = getRandomAvatar();
-                players.push({
-                    id: 'ai_' + Date.now() + '_' + i,
-                    name: aiNames[i] || `🤖 AI助手${i+1}`,
-                    displayName: aiNames[i] || `🤖 AI助手${i+1}`,
-                    avatar: aiAvatar,
-                    conn: null,
-                    isAI: true,
-                    score: 0,
-                    x: 0.3 + (i * 0.4),
-                    y: 0.88
-                });
-            }
-
-            renderLobbyPlayers();
-            startGame();
         }
 
         function renderLobbyPlayers() {
@@ -846,13 +855,13 @@
 
             players.forEach(p => {
                 const item = document.createElement('div');
-                item.className = 'flex justify-between items-center bg-white p-2.5 rounded-xl border border-amber-200 text-sm shadow-sm';
+                item.className = 'flex justify-between items-center bg-white p-2.5 rounded-2xl border-2 border-amber-200 text-sm shadow-sm';
                 item.innerHTML = `
                     <div class="flex items-center gap-2 truncate">
-                        <span class="text-2xl">${p.avatar}</span>
-                        <span class="font-bold text-slate-700 truncate">${p.displayName || p.name}</span>
+                        <span class="text-xl">${p.isAI ? '🤖' : '📱'}</span>
+                        <span class="font-bold text-amber-900 truncate whitespace-nowrap">${p.displayName || p.name}</span>
                     </div>
-                    <span class="text-[10px] ${p.isAI ? 'bg-amber-100 text-amber-800 border-amber-300' : 'bg-emerald-100 text-emerald-800 border-emerald-300'} px-2 py-0.5 rounded font-bold border flex-shrink-0">
+                    <span class="text-[10px] ${p.isAI ? 'bg-orange-100 text-orange-800' : 'bg-emerald-100 text-emerald-800'} px-2 py-0.5 rounded-full font-bold flex-shrink-0">
                         ${p.isAI ? 'AI' : '連線'}
                     </span>
                 `;
@@ -860,394 +869,493 @@
             });
         }
 
-        function startGame() {
+        document.getElementById('btn-start-game').addEventListener('click', () => {
+            finalizeAndStartGame();
+        });
+
+        function finalizeAndStartGame() {
+            totalBoxCount = parseInt(document.getElementById('select-box-count').value, 10);
+            const aiToAddCount = parseInt(document.getElementById('select-ai-count').value, 10);
+
+            const totalWaves = totalBoxCount * 4;
+            const andrewProbability = totalWaves * 0.01;
+
+            if (aiToAddCount > 0) {
+                const availableTypes = ['andrew', 'tom', 'mario', 'random'];
+                
+                for (let i = 0; i < aiToAddCount; i++) {
+                    let aiSpec = {};
+                    let isAndrew = (Math.random() < andrewProbability) && availableTypes.includes('andrew');
+                    
+                    if (isAndrew) {
+                        const acc = getRandomInt(90, 100);
+                        aiSpec = {
+                            baseName: '安得烈小羅',
+                            fullName: `安得烈小羅(${acc}%)`,
+                            type: 'andrew',
+                            minAcc: acc / 100,
+                            maxAcc: acc / 100,
+                            accPercent: acc,
+                            accRate: acc / 100
+                        };
+                        availableTypes.splice(availableTypes.indexOf('andrew'), 1);
+                    } else {
+                        let nonAndrewTypes = availableTypes.filter(t => t !== 'andrew');
+                        if (nonAndrewTypes.length === 0) break;
+
+                        let chosenType = nonAndrewTypes[Math.floor(Math.random() * nonAndrewTypes.length)];
+                        availableTypes.splice(availableTypes.indexOf(chosenType), 1);
+
+                        if (chosenType === 'tom') {
+                            const acc = getRandomInt(50, 80);
+                            aiSpec = {
+                                baseName: '🤖 特工阿湯哥',
+                                fullName: `🤖 特工阿湯哥(${acc}%)`,
+                                type: 'tom',
+                                minAcc: acc / 100,
+                                maxAcc: acc / 100,
+                                accPercent: acc,
+                                accRate: acc / 100
+                            };
+                        } else if (chosenType === 'mario') {
+                            const acc = getRandomInt(40, 70);
+                            aiSpec = {
+                                baseName: '🍄 瑪莉歐',
+                                fullName: `🍄 瑪莉歐(${acc}%)`,
+                                type: 'mario',
+                                minAcc: acc / 100,
+                                maxAcc: acc / 100,
+                                accPercent: acc,
+                                accRate: acc / 100
+                            };
+                        } else {
+                            const randomNames = [
+                                '廖太太', '三寶媽', '閃電葛葛', '晶晶阿姨', 
+                                '小光光', '巧克力阿北', '小白白', '阿青青'
+                            ];
+                            const pickedName = randomNames[Math.floor(Math.random() * randomNames.length)];
+                            const acc = getRandomInt(10, 90);
+                            aiSpec = {
+                                baseName: pickedName,
+                                fullName: `${pickedName}(${acc}%)`,
+                                type: 'random',
+                                minAcc: acc / 100,
+                                maxAcc: acc / 100,
+                                accPercent: acc,
+                                accRate: acc / 100
+                            };
+                        }
+                    }
+
+                    players.push({
+                        id: 'ai_' + Date.now() + '_' + i,
+                        name: aiSpec.fullName,
+                        displayName: aiSpec.fullName,
+                        conn: null,
+                        isAI: true,
+                        aiType: aiSpec.type,
+                        aiSpec: aiSpec,
+                        score: 0,
+                        waveAnswered: false,
+                        choiceIndex: null,
+                        timeLeft: 0,
+                        packedItems: [],
+                        currentWaveOptions: []
+                    });
+                }
+            }
+
+            renderLobbyPlayers();
+
             document.getElementById('view-lobby').classList.add('hidden');
             document.getElementById('main-header').classList.add('hidden');
             document.getElementById('main-footer').classList.add('hidden');
-
             document.getElementById('view-game').classList.remove('hidden');
             document.getElementById('view-game').classList.add('grid');
 
-            canvas = document.getElementById('gameCanvas');
-            ctx = canvas.getContext('2d');
-            resizeCanvas();
-
             players.forEach(p => { if (p.conn) p.conn.send({ type: 'GAME_START' }); });
 
-            spawnedFoodCount = 0;
-            activeFoods = [];
-            scorePopups = [];
-            explosionParticles = [];
-            isGameRunning = true;
-
-            requestAnimationFrame(gameLoop);
-            spawnFoodInterval();
+            currentBoxIndex = 0;
+            startNewBoxFlow(currentBoxIndex);
         }
 
-        function resizeCanvas() {
-            if (!canvas) return;
-            canvas.width = canvas.parentElement.clientWidth;
-            canvas.height = canvas.parentElement.clientHeight;
-        }
-
-        window.addEventListener('resize', resizeCanvas);
-
-        function spawnFoodInterval() {
-            if (!isGameRunning) return;
-
-            if (spawnedFoodCount < totalFoodToSpawn) {
-                const isGood = Math.random() < 0.7;
-                const pool = isGood ? validFoodPool : invalidFoodPool;
-                const foodItem = pool[Math.floor(Math.random() * pool.length)];
-
-                // 隨機某個食物加快 20%-100%
-                let speedBoostLevel = 0;
-                let speedMultiplier = 1.0;
-                if (Math.random() < 0.35) { // 約 35% 機率觸發加速食物
-                    speedBoostLevel = Math.floor(Math.random() * 5) + 1; // 1: 20%, 2: 40%, 3: 60%, 4: 80%, 5: 100%
-                    speedMultiplier = 1 + (speedBoostLevel * 0.2);
-                }
-
-                // 每加快 20%，分數加倍計算
-                let finalScore = foodItem.score;
-                if (speedBoostLevel > 0) {
-                    finalScore = foodItem.score * Math.pow(2, speedBoostLevel);
-                }
-
-                const baseSpeed = (0.003 + Math.random() * 0.002) * (foodDropSpeed / 3.5);
-
-                activeFoods.push({
-                    id: Date.now() + '_' + Math.random(),
-                    name: foodItem.name,
-                    icon: foodItem.icon,
-                    score: finalScore,
-                    isGood: isGood,
-                    speedBoostLevel: speedBoostLevel,
-                    x: 0.05 + Math.random() * 0.9,
-                    y: 0,
-                    speed: baseSpeed * speedMultiplier
-                });
-
-                spawnedFoodCount++;
-                document.getElementById('remaining-food-badge').innerText = `🍎 剩餘物資：${totalFoodToSpawn - spawnedFoodCount}/${totalFoodToSpawn}`;
-
-                const nextInterval = 1000 + Math.random() * 1500;
-                setTimeout(spawnFoodInterval, nextInterval);
+        /* ==========================================================================
+           6. 核心遊戲流程：食物箱與 4 波答題
+           ========================================================================== */
+        
+        function startNewBoxFlow(boxIdx) {
+            if (boxIdx >= totalBoxCount) {
+                showFinalResult();
+                return;
             }
+
+            currentBoxData = FOOD_BOXES[Math.floor(Math.random() * FOOD_BOXES.length)];
+            usedAllowedInCurrentBox = [];
+            currentWaveIndex = 0;
+
+            players.forEach(p => p.packedItems = []);
+
+            // 完整顯示文字，若有年齡層則顯示在下一行
+            document.getElementById('big-box-title').innerText = currentBoxData.title;
+            const ageEl = document.getElementById('big-box-age');
+            if (currentBoxData.age) {
+                ageEl.innerText = currentBoxData.age;
+                ageEl.classList.remove('hidden');
+            } else {
+                ageEl.innerText = '';
+                ageEl.classList.add('hidden');
+            }
+
+            document.getElementById('box-type-badge').innerText = `${currentBoxData.icon} ${currentBoxData.name}`;
+
+            startWaveFlow(currentWaveIndex);
         }
 
-        function gameLoop() {
-            if (!isGameRunning) return;
+        function startWaveFlow(waveIdx) {
+            clearAllTimers();
+            isTransitioning = true;
 
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            document.getElementById('correct-badge-container').innerHTML = '';
 
-            // 更新 AI 位置
-            players.filter(p => p.isAI).forEach(ai => {
-                const goodFoods = activeFoods.filter(f => f.score > 0);
-                if (goodFoods.length > 0) {
-                    const target = goodFoods[0];
-                    if (ai.x < target.x) ai.x += 0.003;
-                    if (ai.x > target.x) ai.x -= 0.003;
-                    if (ai.y < target.y) ai.y += 0.003;
-                    if (ai.y > target.y) ai.y -= 0.003;
+            document.getElementById('splash-box-title').innerText = `${currentBoxData.icon} 箱數 ${currentBoxIndex + 1}/${totalBoxCount}：${currentBoxData.name}`;
+            document.getElementById('splash-wave-text').innerText = `第 ${waveIdx + 1} 波物資選擇`;
+            document.getElementById('view-question-splash').classList.remove('hidden');
+
+            setTimeout(() => {
+                document.getElementById('view-question-splash').classList.add('hidden');
+                loadWaveContent(waveIdx);
+            }, 1000);
+        }
+
+        function loadWaveContent(waveIdx) {
+            isTransitioning = false;
+            waveTimeLeft = 5;
+            lastPlayedHalfSecStep = -1;
+
+            let availableAllowed = currentBoxData.allowed.filter(item => !usedAllowedInCurrentBox.includes(item));
+            if (availableAllowed.length === 0) {
+                usedAllowedInCurrentBox = [];
+                availableAllowed = [...currentBoxData.allowed];
+            }
+            const chosenCorrect = availableAllowed[Math.floor(Math.random() * availableAllowed.length)];
+            usedAllowedInCurrentBox.push(chosenCorrect);
+
+            const otherBoxesAllowed = FOOD_BOXES.flatMap(b => b.allowed).filter(item => !currentBoxData.allowed.includes(item));
+            const wrongCandidates = [...FORBIDDEN_ITEMS, ...otherBoxesAllowed];
+            const shuffledWrong = shuffleArray(wrongCandidates).slice(0, 3);
+
+            const rawOptions = [
+                { name: chosenCorrect, isCorrect: true, icon: getItemIcon(chosenCorrect) },
+                { name: shuffledWrong[0], isCorrect: false, icon: getItemIcon(shuffledWrong[0]) },
+                { name: shuffledWrong[1], isCorrect: false, icon: getItemIcon(shuffledWrong[1]) },
+                { name: shuffledWrong[2], isCorrect: false, icon: getItemIcon(shuffledWrong[2]) }
+            ];
+            const currentWaveOptions = shuffleArray(rawOptions);
+
+            players.forEach(p => {
+                p.waveAnswered = false;
+                p.choiceIndex = null;
+                p.timeLeft = 0;
+                p.currentWaveOptions = currentWaveOptions;
+
+                if (p.conn) {
+                    p.conn.send({
+                        type: 'WAVE_START',
+                        boxIndex: currentBoxIndex,
+                        totalBoxes: totalBoxCount,
+                        waveIndex: waveIdx,
+                        options: p.currentWaveOptions.map(o => ({ name: o.name, icon: o.icon }))
+                    });
                 }
             });
 
-            // 繪製與更新食物
-            for (let i = activeFoods.length - 1; i >= 0; i--) {
-                const food = activeFoods[i];
-                food.y += food.speed;
+            document.getElementById('wave-number').innerText = `第 ${currentBoxIndex + 1} 箱 - 第 ${waveIdx + 1} / 4 波`;
+            document.getElementById('timer-text').innerText = `⏱️ ${waveTimeLeft}s`;
+            document.getElementById('timer-bar').style.width = '100%';
 
-                const drawX = food.x * canvas.width;
-                const drawY = food.y * canvas.height;
+            renderBigBoxPreview();
+            renderPlayersDashboard();
 
-                ctx.save();
-                ctx.translate(drawX, drawY);
+            startWaveTimer();
+            triggerAIBehaviors();
+        }
 
-                // 速度加快的食物，按比例變小（每多一級加速縮小 12%，最大縮小至約 40% 大小）
-                let scaleFactor = 1.0;
-                if (food.speedBoostLevel > 0) {
-                    scaleFactor = Math.max(0.4, 1.0 - (food.speedBoostLevel * 0.12));
-                    ctx.scale(scaleFactor, scaleFactor);
+        function renderBigBoxPreview() {
+            const container = document.getElementById('big-box-items-preview');
+            container.innerHTML = '';
+            
+            const sampleItems = players.length > 0 ? players[0].packedItems : [];
+            sampleItems.forEach(item => {
+                const tag = document.createElement('span');
+                tag.className = 'bg-white/90 border-2 border-amber-400 text-amber-900 text-xs md:text-sm font-black px-2.5 py-0.5 rounded-full flex items-center gap-1 shadow-sm animate-pop whitespace-nowrap';
+                tag.innerHTML = `<span>${getItemIcon(item)}</span> <span>${item}</span>`;
+                container.appendChild(tag);
+            });
+        }
+
+        function triggerAIBehaviors() {
+            players.filter(p => p.isAI).forEach(ai => {
+                const correctIdx = ai.currentWaveOptions.findIndex(o => o.isCorrect);
+                const accRate = ai.aiSpec ? ai.aiSpec.accRate : 0.75;
+                const isCorrect = Math.random() < accRate;
+                
+                let chosenIdx = correctIdx;
+                if (!isCorrect) {
+                    const wrongIndices = [0, 1, 2, 3].filter(i => i !== correctIdx);
+                    chosenIdx = wrongIndices[Math.floor(Math.random() * wrongIndices.length)];
                 }
 
-                // 加大速度食物外圍的閃電符號 ⚡
-                if (food.speedBoostLevel > 0) {
-                    ctx.font = 'bold 30px sans-serif';
-                    ctx.textAlign = 'center';
-                    ctx.shadowColor = '#f59e0b';
-                    ctx.shadowBlur = 10;
-                    ctx.fillText('⚡', -28, -20);
-                    ctx.fillText('⚡', 28, -20);
-                    ctx.shadowBlur = 0; // 重置發光效果
-                }
+                const delay = Math.random() * 3500 + 500;
+                const tid = setTimeout(() => {
+                    if (isTransitioning || ai.waveAnswered) return;
+                    ai.waveAnswered = true;
+                    ai.choiceIndex = chosenIdx;
+                    ai.timeLeft = waveTimeLeft;
 
-                // 繪製食物圖示與名稱
-                ctx.font = '43px sans-serif';
-                ctx.textAlign = 'center';
-                ctx.fillText(food.icon, 0, 0);
-
-                ctx.font = 'bold 14px "Noto Sans TC"';
-                ctx.fillStyle = food.score > 0 ? '#15803d' : '#e11d48';
-                ctx.fillText(food.name, 0, 24);
-
-                ctx.restore();
-
-                // 檢測是否碰撞玩家 (考慮縮小後的物理碰撞區域)
-                const hitRadius = 45 * scaleFactor;
-                players.forEach(p => {
-                    const playerX = p.x * canvas.width;
-                    const playerY = p.y * canvas.height;
-                    const distX = Math.abs(drawX - playerX);
-                    const distY = Math.abs(drawY - playerY);
-
-                    if (distX < hitRadius && distY < hitRadius) {
-                        p.score += food.score;
-
-                        if (food.score > 0) {
-                            // 正確食物音效與躍動文字效果
-                            playScoreSound();
-                            scorePopups.push({
-                                text: `+${food.score}`,
-                                x: drawX,
-                                y: drawY - 10,
-                                alpha: 1.0,
-                                scale: food.speedBoostLevel > 0 ? 2.0 : 1.5,
-                                color: food.speedBoostLevel > 0 ? '#ea580c' : '#f59e0b'
-                            });
-                        } else {
-                            // 不能放進去的食物：觸發爆炸特效與音效
-                            playExplosionSound();
-                            createExplosion(drawX, drawY);
-                            scorePopups.push({
-                                text: `${food.score}`,
-                                x: drawX,
-                                y: drawY - 10,
-                                alpha: 1.0,
-                                scale: 1.6,
-                                color: '#f43f5e'
-                            });
-                        }
-
-                        activeFoods.splice(i, 1);
+                    if (isCorrect) {
+                        triggerJumpCorrectBadge();
                     }
-                });
 
-                if (activeFoods[i] && food.y > 1.05) {
-                    activeFoods.splice(i, 1);
+                    renderPlayersDashboard();
+                    checkAllWaveAnswered();
+                }, delay);
+
+                aiTimeouts.push(tid);
+            });
+        }
+
+        function startWaveTimer() {
+            const startTime = Date.now();
+            const duration = 5000;
+
+            timerInterval = setInterval(() => {
+                const elapsed = Date.now() - startTime;
+                const remaining = Math.max(0, duration - elapsed);
+                waveTimeLeft = Math.ceil(remaining / 1000);
+
+                document.getElementById('timer-text').innerText = `⏱️ ${waveTimeLeft}s`;
+                document.getElementById('timer-bar').style.width = `${(remaining / duration) * 100}%`;
+
+                // 每 0.5 秒 (500ms) 播放一次急促心跳聲（每半秒 2 聲 Lub-Dub）
+                const currentHalfSecStep = Math.floor(elapsed / 500);
+                if (currentHalfSecStep > lastPlayedHalfSecStep && remaining > 0) {
+                    lastPlayedHalfSecStep = currentHalfSecStep;
+                    playHeartbeatSound();
                 }
-            }
 
-            // 繪製與更新爆炸粒子特效
-            for (let i = explosionParticles.length - 1; i >= 0; i--) {
-                const p = explosionParticles[i];
-                p.x += p.vx;
-                p.y += p.vy;
-                p.alpha -= p.decay;
-
-                ctx.save();
-                ctx.globalAlpha = Math.max(0, p.alpha);
-                ctx.fillStyle = p.color;
-                ctx.beginPath();
-                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.restore();
-
-                if (p.alpha <= 0) {
-                    explosionParticles.splice(i, 1);
+                if (remaining <= 0) {
+                    clearAllTimers();
+                    evaluateWaveAndProceed();
                 }
+            }, 50);
+        }
+
+        function checkAllWaveAnswered() {
+            if (players.every(p => p.waveAnswered) && !isTransitioning) {
+                clearAllTimers();
+                evaluateWaveAndProceed();
             }
+        }
 
-            // 繪製得分飄浮特效
-            for (let i = scorePopups.length - 1; i >= 0; i--) {
-                const pop = scorePopups[i];
-                pop.y -= 1.5;
-                pop.alpha -= 0.025;
-                if (pop.scale > 1.0) pop.scale -= 0.02;
+        /* ==========================================================================
+           7. 計分規則與波次推進
+           ========================================================================== */
+        function evaluateWaveAndProceed() {
+            if (isTransitioning) return;
+            isTransitioning = true;
 
-                ctx.save();
-                ctx.globalAlpha = Math.max(0, pop.alpha);
-                ctx.font = `900 ${Math.round(28 * pop.scale)}px "Noto Sans TC"`;
-                ctx.fillStyle = pop.color;
-                ctx.textAlign = 'center';
-                ctx.shadowColor = 'rgba(0,0,0,0.3)';
-                ctx.shadowBlur = 6;
-                ctx.fillText(pop.text, pop.x, pop.y);
-                ctx.restore();
-
-                if (pop.alpha <= 0) {
-                    scorePopups.splice(i, 1);
-                }
-            }
-
-            // 繪製玩家角色
             players.forEach(p => {
-                const px = p.x * canvas.width;
-                const py = p.y * canvas.height;
-
-                ctx.font = '52px sans-serif';
-                ctx.textAlign = 'center';
-                ctx.fillText(p.avatar, px, py);
-
-                ctx.font = 'bold 16px "Noto Sans TC"';
-                ctx.fillStyle = '#1e293b';
-                ctx.fillText(p.displayName || p.name, px, py + 25);
-
-                ctx.font = '900 14px "Noto Sans TC"';
-                ctx.fillStyle = '#d97706';
-                ctx.fillText(`${p.score} 分`, px, py + 45);
+                if (p.choiceIndex !== null && p.choiceIndex !== undefined) {
+                    const chosenOpt = p.currentWaveOptions[p.choiceIndex];
+                    if (chosenOpt && chosenOpt.isCorrect) {
+                        let waveScore = 5 + (p.timeLeft || 0);
+                        p.score += waveScore;
+                        p.packedItems.push(chosenOpt.name);
+                    }
+                }
             });
 
             renderPlayersDashboard();
+            renderBigBoxPreview();
 
-            // 檢查遊戲結束條件
-            if (spawnedFoodCount >= totalFoodToSpawn && activeFoods.length === 0) {
-                isGameRunning = false;
-                setTimeout(showFinalResult, 1500);
-            } else {
-                requestAnimationFrame(gameLoop);
-            }
+            setTimeout(() => {
+                currentWaveIndex++;
+                if (currentWaveIndex < 4) {
+                    startWaveFlow(currentWaveIndex);
+                } else {
+                    currentBoxIndex++;
+                    startNewBoxFlow(currentBoxIndex);
+                }
+            }, 1000);
         }
 
+        // 排行榜渲染
         function renderPlayersDashboard() {
             const dashboard = document.getElementById('players-dashboard');
             dashboard.innerHTML = '';
-
             document.getElementById('game-total-players-badge').innerText = `${players.length} 人`;
 
-            const sortedPlayers = [...players].sort((a, b) => b.score - a.score);
-            
-            sortedPlayers.forEach((p, rank) => {
-                const card = document.createElement('div');
-                const displayName = p.displayName || p.name;
+            const sorted = [...players].sort((a, b) => b.score - a.score);
 
-                card.className = `p-2.5 md:p-3 rounded-2xl border border-amber-200 bg-white/90 flex items-center justify-between transition-all duration-200 flex-shrink-0 shadow-sm`;
+            sorted.forEach((p, rank) => {
+                const card = document.createElement('div');
+                let borderClass = 'border-amber-200 bg-white/80';
+                
+                if (p.waveAnswered) {
+                    borderClass = 'border-amber-400 bg-amber-100/60 shadow-sm';
+                }
+
+                card.className = `p-2.5 rounded-2xl border-2 ${borderClass} flex items-center justify-between transition-all flex-shrink-0`;
                 card.innerHTML = `
-                    <div class="flex items-center gap-2.5 truncate max-w-[65%]">
-                        <span class="font-black text-emerald-700 text-lg md:text-xl min-w-[30px] text-center">#${rank + 1}</span>
-                        <span class="text-2xl flex-shrink-0">${p.avatar}</span>
-                        <span class="font-black text-slate-800 text-xl md:text-2xl truncate tracking-wide leading-tight">${displayName}</span>
+                    <div class="flex items-center gap-2 truncate max-w-[70%]">
+                        <span class="font-black text-amber-800 text-sm min-w-[24px] text-center whitespace-nowrap">#${rank + 1}</span>
+                        <span class="font-black text-amber-900 text-base truncate whitespace-nowrap">${p.displayName || p.name}</span>
                     </div>
-                    <div class="flex items-center gap-2.5 flex-shrink-0">
-                        <span class="text-amber-600 font-black text-xl md:text-2xl">${p.score} 分</span>
+                    <div class="flex items-center gap-2 flex-shrink-0">
+                        <span class="text-orange-600 font-black text-lg whitespace-nowrap">${p.score} 分</span>
                     </div>
                 `;
                 dashboard.appendChild(card);
             });
         }
 
-        function renderParticipantList(elementId, playerGroup, startIndex = 1) {
-            const container = document.getElementById(elementId);
-            container.innerHTML = '';
-            playerGroup.forEach((p, idx) => {
-                const rankNum = startIndex + idx;
-                const item = document.createElement('div');
-                item.className = 'flex flex-col p-2.5 bg-white rounded-xl border border-amber-200 text-sm gap-1 shadow-sm';
-                item.innerHTML = `
-                    <div class="flex items-center gap-2 truncate w-full">
-                        <span class="font-bold text-amber-800 text-xs w-6 flex-shrink-0">#${rankNum}</span>
-                        <span class="text-xl">${p.avatar}</span>
-                        <span class="font-bold text-slate-700 truncate">${p.name}</span>
-                    </div>
-                    <div class="text-right w-full pl-8">
-                        <span class="font-black text-amber-600">${p.score} 分</span>
-                    </div>
-                `;
-                container.appendChild(item);
-            });
-        }
-
+        /* ==========================================================================
+           8. 最終結算與頒獎 (套用問答遊戲頒獎雙邊全場排名、TOP3卡片、音樂與煙火)
+           ========================================================================== */
         function showFinalResult() {
             document.getElementById('view-game').classList.add('hidden');
             document.getElementById('view-result').classList.remove('hidden');
 
-            const allSortedPlayers = [...players].sort((a, b) => b.score - a.score);
+            const allSorted = [...players].sort((a, b) => b.score - a.score);
 
             players.forEach(p => {
                 if (p.conn) {
-                    const rank = allSortedPlayers.findIndex(s => s.id === p.id) + 1;
+                    const rank = allSorted.findIndex(s => s.id === p.id) + 1;
                     p.conn.send({
                         type: 'FINAL_RESULT',
                         rank: rank,
                         score: p.score,
-                        totalPlayers: allSortedPlayers.length
+                        totalPlayers: allSorted.length
                     });
                 }
             });
 
-            const halfIndex = Math.ceil(allSortedPlayers.length / 2);
-            const leftPlayers = allSortedPlayers.slice(0, halfIndex);
-            const rightPlayers = allSortedPlayers.slice(halfIndex);
+            // 分割全場排名至左右兩側
+            const halfLength = Math.ceil(allSorted.length / 2);
+            const leftPlayers = allSorted.slice(0, halfLength);
+            const rightPlayers = allSorted.slice(halfLength);
+
+            const leftContainer = document.getElementById('result-left-list');
+            const rightContainer = document.getElementById('result-right-list');
+            leftContainer.innerHTML = '';
+            rightContainer.innerHTML = '';
 
             document.getElementById('result-left-count').innerText = `${leftPlayers.length} 人`;
             document.getElementById('result-right-count').innerText = `${rightPlayers.length} 人`;
 
-            renderParticipantList('result-left-list', leftPlayers, 1);
-            renderParticipantList('result-right-list', rightPlayers, halfIndex + 1);
+            leftPlayers.forEach((p, idx) => {
+                const rankNum = idx + 1;
+                const item = document.createElement('div');
+                item.className = 'flex justify-between items-center p-2.5 bg-slate-900/80 rounded-xl border border-slate-800 text-sm';
+                item.innerHTML = `
+                    <span class="font-bold text-white whitespace-nowrap overflow-hidden text-ellipsis">#${rankNum} ${p.displayName || p.name}</span>
+                    <span class="font-black text-amber-400 whitespace-nowrap">${p.score} 分</span>
+                `;
+                leftContainer.appendChild(item);
+            });
 
+            rightPlayers.forEach((p, idx) => {
+                const rankNum = halfLength + idx + 1;
+                const item = document.createElement('div');
+                item.className = 'flex justify-between items-center p-2.5 bg-slate-900/80 rounded-xl border border-slate-800 text-sm';
+                item.innerHTML = `
+                    <span class="font-bold text-white whitespace-nowrap overflow-hidden text-ellipsis">#${rankNum} ${p.displayName || p.name}</span>
+                    <span class="font-black text-amber-400 whitespace-nowrap">${p.score} 分</span>
+                `;
+                rightContainer.appendChild(item);
+            });
+
+            // 中間 TOP 3 展現區
             const top3Container = document.getElementById('top3-container');
             top3Container.innerHTML = '';
 
-            const top3 = allSortedPlayers.slice(0, 3);
-            const medals = ['🥇 第一名 冠軍', '🥈 第二名 亞軍', '🥉 第三名 季軍'];
-            const colors = ['border-amber-400 bg-amber-100/80 shadow-md', 'border-slate-300 bg-slate-100/80', 'border-orange-300 bg-orange-100/80'];
+            const top3 = allSorted.slice(0, 3);
+            const medals = ['🥇 榮譽冠軍志工', '🥈 亞軍志工', '🥉 季軍志工'];
 
             top3.forEach((p, idx) => {
                 const card = document.createElement('div');
-                
                 if (idx === 0) {
-                    card.className = `w-full max-w-md p-5 rounded-3xl border-4 ${colors[idx]} flex flex-col items-center justify-center my-1`;
+                    card.className = 'w-full max-w-md p-5 rounded-3xl border-4 border-amber-400 bg-slate-900/90 shadow-xl flex flex-col items-center justify-center';
                     card.innerHTML = `
-                        <span class="text-sm font-black text-amber-900 bg-amber-200 px-4 py-1 rounded-full border border-amber-400 mb-1">👑 春日冠軍王座 👑</span>
-                        <div class="text-6xl my-1">${p.avatar}</div>
-                        <div class="text-3xl font-black text-slate-800 tracking-wide text-center">${p.name}</div>
-                        <div class="text-2xl font-black text-amber-600 mt-2">${p.score} 分</div>
+                        <span class="text-sm font-black text-slate-950 bg-amber-400 px-4 py-1 rounded-full mb-1 whitespace-nowrap">👑 冠軍愛心包裝王 👑</span>
+                        <div class="text-5xl my-1">🥇</div>
+                        <div class="text-2xl font-black text-amber-300 whitespace-nowrap overflow-hidden text-ellipsis max-w-full">${p.displayName || p.name}</div>
+                        <div class="text-2xl font-black text-emerald-400 mt-1 whitespace-nowrap">${p.score} 分</div>
                     `;
                 } else {
-                    card.className = `w-full max-w-md p-4 rounded-2xl border-2 ${colors[idx]} flex justify-between items-center px-6`;
+                    card.className = 'w-full max-w-md p-3.5 rounded-2xl border-2 border-amber-500/50 bg-slate-900/80 shadow flex justify-between items-center px-6';
                     card.innerHTML = `
-                        <div class="flex items-center gap-4">
-                            <span class="text-4xl">${p.avatar}</span>
-                            <div class="text-left">
-                                <span class="text-xs font-bold text-slate-500">${medals[idx]}</span>
-                                <div class="text-2xl font-black text-slate-800">${p.name}</div>
+                        <div class="flex items-center gap-3 truncate">
+                            <span class="text-3xl flex-shrink-0">${idx === 1 ? '🥈' : '🥉'}</span>
+                            <div class="text-left truncate">
+                                <span class="text-xs font-bold text-amber-400/80 whitespace-nowrap">${medals[idx]}</span>
+                                <div class="text-xl font-black text-white truncate whitespace-nowrap">${p.displayName || p.name}</div>
                             </div>
                         </div>
-                        <div class="text-right">
-                            <div class="text-xl font-black text-amber-600">${p.score} 分</div>
-                        </div>
+                        <div class="text-xl font-black text-emerald-400 flex-shrink-0 whitespace-nowrap">${p.score} 分</div>
                     `;
                 }
                 top3Container.appendChild(card);
             });
 
-            launch8SecFireworks();
-        }
+            // 播放問答遊戲的馬力歐勝利音樂
+            playMarioVictoryFanfare();
 
-        function launch8SecFireworks() {
-            const duration = 8 * 1000;
+            // 施放煙火動畫 (來自問答遊戲之持續多波段噴射效果)
+            const duration = 3.5 * 1000;
             const animationEnd = Date.now() + duration;
+            const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 9999 };
 
-            const interval = setInterval(() => {
+            function randomInRange(min, max) {
+                return Math.random() * (max - min) + min;
+            }
+
+            const interval = setInterval(function() {
                 const timeLeft = animationEnd - Date.now();
-
                 if (timeLeft <= 0) {
                     return clearInterval(interval);
                 }
+                const particleCount = 50 * (timeLeft / duration);
+                confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } }));
+                confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } }));
+            }, 250);
+        }
 
-                playFireworkBoomSound();
+        /* ==========================================================================
+           9. 工具函式
+           ========================================================================== */
+        function clearAllTimers() {
+            if (timerInterval) clearInterval(timerInterval);
+            aiTimeouts.forEach(t => clearTimeout(t));
+            aiTimeouts = [];
+        }
 
-                confetti({
-                    particleCount: 40,
-                    startVelocity: 30,
-                    spread: 360,
-                    ticks: 60,
-                    origin: {
-                        x: Math.random(),
-                        y: Math.random() * 0.6 + 0.1
-                    }
-                });
-            }, 350);
+        function shuffleArray(array) {
+            const arr = [...array];
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-msg').innerText = msg;
+            toast.classList.remove('opacity-0', '-translate-y-12');
+            setTimeout(() => {
+                toast.classList.add('opacity-0', '-translate-y-12');
+            }, 2500);
         }
     </script>
 </body>
