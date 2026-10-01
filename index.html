@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="zh-TW" class="dark">
+<html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>安得烈食物銀行 - 食物接接樂大亂鬥</title>
+    <title>安得烈食物銀行 - 食物接接樂春日大亂鬥</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- PeerJS & QRCode.js -->
@@ -16,16 +16,17 @@
 
     <script>
         tailwind.config = {
-            darkMode: 'class',
             theme: {
                 extend: {
                     colors: {
-                        neon: {
-                            blue: '#00f3ff',
-                            purple: '#b000ff',
-                            pink: '#ff007f',
-                            green: '#00ff66',
-                            yellow: '#ffcc00'
+                        spring: {
+                            green: '#84cc16',
+                            lightGreen: '#f7fee7',
+                            pink: '#f43f5e',
+                            lightPink: '#fdf2f8',
+                            yellow: '#f59e0b',
+                            sky: '#06b6d4',
+                            warmBg: '#fefce8'
                         }
                     }
                 }
@@ -36,8 +37,8 @@
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap');
         body {
             font-family: 'Noto Sans TC', sans-serif;
-            background-color: #0b0f19;
-            color: #f3f4f6;
+            background: linear-gradient(135deg, #e0f2fe 0%, #fef3c7 50%, #fce7f3 100%);
+            color: #1e293b;
             user-select: none;
             overflow: hidden;
         }
@@ -60,17 +61,17 @@
         }
     </style>
 </head>
-<body class="h-screen w-screen flex flex-col justify-between overflow-hidden bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-900 via-purple-950 to-slate-950">
+<body class="h-screen w-screen flex flex-col justify-between overflow-hidden">
 
     <!-- 頂部 Header -->
-    <header id="main-header" class="w-full px-6 py-3 border-b border-slate-800 bg-slate-900/60 backdrop-blur-md flex justify-between items-center z-10 flex-shrink-0">
+    <header id="main-header" class="w-full px-6 py-3 border-b border-amber-200/60 bg-white/70 backdrop-blur-md flex justify-between items-center z-10 flex-shrink-0 shadow-sm">
         <div class="flex items-center space-x-3">
-            <span class="text-3xl">🍞</span>
-            <h1 class="text-2xl md:text-3xl font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-neon-blue via-neon-purple to-neon-pink">
-                安得烈食物銀行 - 食物接接樂
+            <span class="text-3xl">🌸</span>
+            <h1 class="text-2xl md:text-3xl font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 via-amber-500 to-rose-500">
+                安得烈食物銀行 - 春日食物接接樂
             </h1>
         </div>
-        <div id="game-stage-badge" class="hidden px-4 py-1.5 rounded-full text-sm md:text-lg font-bold bg-slate-800 border border-cyan-500/50 text-cyan-400">
+        <div id="game-stage-badge" class="hidden px-4 py-1.5 rounded-full text-sm md:text-lg font-bold bg-amber-100 border border-amber-300 text-amber-800 shadow-sm">
             準備中
         </div>
     </header>
@@ -79,40 +80,40 @@
     <main class="flex-grow flex items-center justify-center p-2 md:p-4 relative overflow-hidden">
 
         <!-- 大螢幕 - 遊戲大廳 / 掃碼進入 -->
-        <div id="view-lobby" class="w-full max-w-[96vw] h-full max-h-[90vh] bg-slate-900/80 border-2 border-slate-700/80 rounded-2xl p-4 md:p-6 shadow-2xl backdrop-blur-xl relative flex flex-col justify-between overflow-hidden">
+        <div id="view-lobby" class="w-full max-w-[96vw] h-full max-h-[90vh] bg-white/80 border-2 border-amber-200/80 rounded-3xl p-4 md:p-6 shadow-xl backdrop-blur-xl relative flex flex-col justify-between overflow-hidden">
             <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-center h-full">
                 
                 <!-- 左側：QR Code -->
-                <div class="md:col-span-6 lg:col-span-7 flex flex-col items-center justify-center border-b md:border-b-0 md:border-r border-slate-700/80 pr-0 md:pr-6 pb-2 md:pb-0 text-center h-full overflow-hidden">
-                    <div class="p-5 bg-gradient-to-br from-cyan-400 via-purple-500 to-pink-500 rounded-3xl shadow-[0_0_70px_rgba(0,243,255,0.5)] my-auto transition-transform hover:scale-[1.02] duration-300">
-                        <div id="qrcode" class="bg-white p-4 rounded-2xl border-2 border-white flex items-center justify-center shadow-inner"></div>
+                <div class="md:col-span-6 lg:col-span-7 flex flex-col items-center justify-center border-b md:border-b-0 md:border-r border-amber-200/80 pr-0 md:pr-6 pb-2 md:pb-0 text-center h-full overflow-hidden">
+                    <div class="p-5 bg-gradient-to-br from-amber-200 via-rose-200 to-emerald-200 rounded-3xl shadow-lg my-auto transition-transform hover:scale-[1.02] duration-300 border-2 border-white">
+                        <div id="qrcode" class="bg-white p-4 rounded-2xl border-2 border-amber-100 flex items-center justify-center shadow-inner"></div>
                     </div>
                 </div>
 
                 <!-- 右側：玩家名單 & 設定選項 & 開始按鈕 -->
                 <div class="md:col-span-6 lg:col-span-5 flex flex-col justify-between h-full overflow-hidden pl-0 md:pl-2">
                     <div class="flex-grow flex flex-col overflow-hidden">
-                        <h2 class="text-2xl md:text-3xl font-bold text-neon-purple mb-4 flex items-center justify-between flex-shrink-0">
+                        <h2 class="text-2xl md:text-3xl font-bold text-emerald-700 mb-4 flex items-center justify-between flex-shrink-0">
                             <span class="flex items-center gap-2"><i class="fa-solid fa-users"></i> 已加入人員名單</span>
-                            <span id="player-count-badge" class="text-xl bg-purple-900/80 text-purple-300 px-4 py-1.5 rounded-full font-black border border-purple-500/50">0 人</span>
+                            <span id="player-count-badge" class="text-xl bg-emerald-100 text-emerald-800 px-4 py-1.5 rounded-full font-black border border-emerald-300 shadow-sm">0 人</span>
                         </h2>
 
                         <div id="player-list-lobby" class="grid grid-cols-2 lg:grid-cols-3 gap-2.5 overflow-hidden flex-grow content-start">
-                            <div class="col-span-full text-slate-500 text-center py-12 font-bold border border-dashed border-slate-800 rounded-xl text-lg">
+                            <div class="col-span-full text-amber-700/60 text-center py-12 font-bold border-2 border-dashed border-amber-300/60 rounded-2xl text-lg bg-amber-50/50">
                                 尚無玩家連線，請掃描左側 QR Code 加入...
                             </div>
                         </div>
                     </div>
 
                     <!-- 遊戲參數設定區塊 (右下角選單) -->
-                    <div class="w-full pt-4 flex-shrink-0 bg-slate-950/60 border border-slate-800 rounded-2xl p-4 my-2">
-                        <h3 class="text-neon-blue font-bold text-base mb-2 flex items-center gap-2">
+                    <div class="w-full pt-4 flex-shrink-0 bg-amber-50/80 border border-amber-200 rounded-2xl p-4 my-2 shadow-inner">
+                        <h3 class="text-amber-800 font-bold text-base mb-2 flex items-center gap-2">
                             <i class="fa-solid fa-sliders"></i> 遊戲模式設定
                         </h3>
                         <div class="grid grid-cols-3 gap-3">
                             <div class="flex flex-col gap-1">
-                                <label for="select-food-count" class="text-xs text-slate-400 font-bold">食物數量</label>
-                                <select id="select-food-count" class="bg-slate-800 text-white font-bold p-2 rounded-xl border border-slate-700 outline-none focus:border-neon-purple cursor-pointer">
+                                <label for="select-food-count" class="text-xs text-amber-900 font-bold">食物數量</label>
+                                <select id="select-food-count" class="bg-white text-slate-700 font-bold p-2 rounded-xl border border-amber-300 outline-none focus:border-emerald-500 cursor-pointer shadow-sm">
                                     <option value="20">20 個</option>
                                     <option value="40" selected>40 個</option>
                                     <option value="60">60 個</option>
@@ -121,8 +122,8 @@
                                 </select>
                             </div>
                             <div class="flex flex-col gap-1">
-                                <label for="select-drop-speed" class="text-xs text-slate-400 font-bold">掉落速度</label>
-                                <select id="select-drop-speed" class="bg-slate-800 text-white font-bold p-2 rounded-xl border border-slate-700 outline-none focus:border-neon-purple cursor-pointer">
+                                <label for="select-drop-speed" class="text-xs text-amber-900 font-bold">掉落速度</label>
+                                <select id="select-drop-speed" class="bg-white text-slate-700 font-bold p-2 rounded-xl border border-amber-300 outline-none focus:border-emerald-500 cursor-pointer shadow-sm">
                                     <option value="1.5">超緩慢</option>
                                     <option value="2.5">緩慢</option>
                                     <option value="3.5" selected>正常</option>
@@ -131,8 +132,8 @@
                                 </select>
                             </div>
                             <div class="flex flex-col gap-1">
-                                <label for="select-ai-count" class="text-xs text-slate-400 font-bold">AI參賽人數</label>
-                                <select id="select-ai-count" class="bg-slate-800 text-white font-bold p-2 rounded-xl border border-slate-700 outline-none focus:border-neon-purple cursor-pointer">
+                                <label for="select-ai-count" class="text-xs text-amber-900 font-bold">AI參賽人數</label>
+                                <select id="select-ai-count" class="bg-white text-slate-700 font-bold p-2 rounded-xl border border-amber-300 outline-none focus:border-emerald-500 cursor-pointer shadow-sm">
                                     <option value="1" selected>1 名</option>
                                     <option value="2">2 名</option>
                                     <option value="3">3 名</option>
@@ -142,8 +143,8 @@
                     </div>
 
                     <div id="lobby-start-box" class="w-full pt-2 flex-shrink-0">
-                        <button id="btn-start-game" class="hidden w-full py-4 text-3xl font-black text-slate-950 bg-gradient-to-r from-neon-green to-neon-yellow rounded-2xl shadow-[0_0_30px_rgba(0,255,102,0.5)] hover:brightness-110 active:scale-95 transition-all animate-bounce border-2 border-white/40">
-                            🎮 開始遊戲
+                        <button id="btn-start-game" class="hidden w-full py-4 text-3xl font-black text-amber-950 bg-gradient-to-r from-amber-300 via-emerald-300 to-teal-300 rounded-2xl shadow-lg hover:brightness-105 active:scale-95 transition-all animate-bounce border-2 border-white">
+                            🎮 開始春日熱血賽
                         </button>
                     </div>
                 </div>
@@ -151,54 +152,62 @@
             </div>
         </div>
 
-        <!-- 手機端 - 玩家控制器 (搖桿/按鈕控制移動) -->
-        <div id="view-player-mobile" class="hidden fixed inset-0 z-50 bg-slate-950 p-4 flex-col justify-between overflow-hidden">
-            <div id="mobile-top-bar" class="text-center space-y-1 flex-shrink-0">
-                <span class="text-3xl">🍞</span>
-                <h2 class="text-xl font-black text-neon-blue">安得烈食物接接樂控制器</h2>
-                <p id="player-mobile-name" class="text-neon-yellow font-bold text-base">正在連線大螢幕...</p>
-                <div id="mobile-avatar-display" class="hidden text-5xl py-2 animate-bounce">
+        <!-- 手機端 - 玩家控制器 (傾斜手機控制移動) -->
+        <div id="view-player-mobile" class="hidden fixed inset-0 z-50 bg-gradient-to-b from-sky-100 via-amber-50 to-emerald-100 p-4 flex-col justify-between overflow-hidden">
+            <div id="mobile-top-bar" class="text-center space-y-1 flex-shrink-0 pt-2">
+                <span class="text-4xl">🌸</span>
+                <h2 class="text-xl font-black text-emerald-800">食物接接樂體感控制器</h2>
+                <p id="player-mobile-name" class="text-amber-700 font-bold text-base">正在連線大螢幕...</p>
+                <div id="mobile-avatar-display" class="hidden text-6xl py-2 animate-bounce">
                     🐱
                 </div>
             </div>
 
-            <div id="mobile-join-form" class="space-y-4 bg-slate-900 p-6 rounded-2xl border border-slate-800 my-auto">
+            <div id="mobile-join-form" class="space-y-4 bg-white/90 p-6 rounded-3xl border-2 border-amber-200 my-auto shadow-xl backdrop-blur-md">
                 <input type="text" id="mobile-name-input" maxlength="8" placeholder="請輸入您的暱稱..." 
-                    class="w-full bg-slate-800 border-2 border-slate-700 p-4 rounded-xl text-center text-white text-xl font-bold focus:border-neon-purple outline-none">
-                <button id="btn-mobile-join" class="w-full py-4 bg-gradient-to-r from-neon-blue to-neon-purple text-black font-black text-xl rounded-xl shadow-lg">
+                    class="w-full bg-amber-50/50 border-2 border-amber-300 p-4 rounded-2xl text-center text-slate-800 text-xl font-bold focus:border-emerald-500 outline-none shadow-inner">
+                <button id="btn-mobile-join" class="w-full py-4 bg-gradient-to-r from-emerald-400 to-teal-400 text-white font-black text-xl rounded-2xl shadow-lg border-2 border-white">
                     確認參賽
                 </button>
             </div>
 
-            <!-- 控制搖桿按鈕 -->
-            <div id="mobile-controls" class="hidden flex-col items-center gap-6 w-full my-auto">
-                <div class="text-slate-300 font-bold text-lg text-center">請點擊左右按鈕移動您的動物角色！</div>
-                <div class="grid grid-cols-2 gap-6 w-full max-w-xs h-40">
-                    <button id="btn-move-left" class="bg-blue-600 active:bg-blue-700 rounded-3xl text-6xl text-white font-black shadow-2xl flex items-center justify-center border-4 border-blue-400">
-                        ◀
-                    </button>
-                    <button id="btn-move-right" class="bg-purple-600 active:bg-purple-700 rounded-3xl text-6xl text-white font-black shadow-2xl flex items-center justify-center border-4 border-purple-400">
-                        ▶
-                    </button>
+            <!-- 控制器 - 手機感應傾斜控制 -->
+            <div id="mobile-controls" class="hidden flex-col items-center justify-center gap-4 w-full my-auto bg-white/80 border-2 border-emerald-300 rounded-3xl p-6 shadow-xl backdrop-blur-md">
+                <div class="text-emerald-900 font-black text-xl text-center flex items-center gap-2">
+                    <i class="fa-solid fa-mobile-screen-button animate-pulse text-2xl"></i>
+                    左右傾斜手機控制移動
                 </div>
+                
+                <!-- 傾斜指示計量條 -->
+                <div class="w-full bg-slate-200 h-6 rounded-full overflow-hidden border border-slate-300 relative my-2">
+                    <div id="tilt-indicator" class="w-6 h-full bg-emerald-500 rounded-full transition-all duration-75 absolute top-0 left-1/2 -translate-x-1/2"></div>
+                </div>
+
+                <div class="text-slate-600 font-bold text-sm text-center">
+                    目前傾斜角度：<span id="tilt-angle-text" class="text-emerald-700 font-black text-lg">0°</span>
+                </div>
+
+                <button id="btn-recalibrate" class="mt-2 px-6 py-2.5 bg-amber-400 active:bg-amber-500 text-amber-950 font-bold rounded-xl shadow border border-white text-sm">
+                    🔄 重置中心零點
+                </button>
             </div>
 
             <!-- 手機端 - 最終結算 -->
-            <div id="mobile-final-result" class="hidden my-auto flex-col items-center justify-center space-y-4 text-center bg-slate-900 border-2 border-neon-yellow p-8 rounded-3xl shadow-2xl w-full">
+            <div id="mobile-final-result" class="hidden my-auto flex-col items-center justify-center space-y-4 text-center bg-white border-2 border-amber-300 p-8 rounded-3xl shadow-2xl w-full">
                 <span class="text-6xl" id="mobile-result-icon">🏆</span>
-                <h2 class="text-2xl font-black text-neon-yellow">遊戲最終結算</h2>
+                <h2 class="text-2xl font-black text-amber-700">遊戲最終結算</h2>
                 
                 <div class="flex flex-col items-center space-y-1 my-2">
-                    <div class="text-5xl font-black text-white tracking-wider" id="mobile-result-rank">第 - 名</div>
-                    <div class="text-lg font-bold text-slate-400" id="mobile-result-total">共 - 人</div>
+                    <div class="text-5xl font-black text-slate-800 tracking-wider" id="mobile-result-rank">第 - 名</div>
+                    <div class="text-lg font-bold text-slate-500" id="mobile-result-total">共 - 人</div>
                 </div>
 
-                <div class="text-2xl font-bold text-slate-300">總得分：<span id="mobile-result-score" class="text-neon-green">0</span> 分</div>
+                <div class="text-2xl font-bold text-slate-700">總得分：<span id="mobile-result-score" class="text-emerald-600 font-black">0</span> 分</div>
                 
-                <div id="mobile-result-status" class="text-base font-bold text-cyan-400 pt-2">感謝您的熱情參與！</div>
+                <div id="mobile-result-status" class="text-base font-bold text-emerald-800 pt-2">感謝您的熱情參與！</div>
             </div>
 
-            <div id="mobile-status-text" class="text-center text-slate-400 font-bold py-1 text-sm flex-shrink-0">
+            <div id="mobile-status-text" class="text-center text-emerald-900 font-bold py-2 text-sm flex-shrink-0 bg-white/50 rounded-full my-2 border border-emerald-200">
                 連線成功！請輸入暱稱完成登錄
             </div>
         </div>
@@ -207,59 +216,59 @@
         <div id="view-game" class="hidden w-full h-full max-h-[96vh] grid grid-cols-1 md:grid-cols-12 gap-4 overflow-hidden">
             
             <!-- 左側：排行榜 -->
-            <div class="md:col-span-4 lg:col-span-3 bg-slate-900/80 border border-slate-800 rounded-2xl p-3 backdrop-blur-xl flex flex-col justify-between overflow-hidden h-full">
+            <div class="md:col-span-4 lg:col-span-3 bg-white/80 border-2 border-amber-200 rounded-3xl p-3 backdrop-blur-xl flex flex-col justify-between overflow-hidden h-full shadow-lg">
                 <div class="overflow-hidden flex flex-col h-full">
-                    <h3 class="text-slate-300 text-xl md:text-2xl font-black mb-3 flex items-center justify-between flex-shrink-0 border-b border-slate-800 pb-2">
-                        <span>🔥 實時全場得分榜</span>
-                        <span id="game-total-players-badge" class="text-base bg-cyan-950 text-neon-blue px-3 py-1 rounded-full border border-cyan-800">0 人</span>
+                    <h3 class="text-emerald-800 text-xl md:text-2xl font-black mb-3 flex items-center justify-between flex-shrink-0 border-b border-amber-200 pb-2">
+                        <span>🌸 實時全場得分榜</span>
+                        <span id="game-total-players-badge" class="text-base bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full border border-emerald-300">0 人</span>
                     </h3>
                     <div id="players-dashboard" class="flex flex-col space-y-2.5 overflow-hidden flex-grow"></div>
                 </div>
             </div>
 
             <!-- 右側：遊戲畫布 -->
-            <div class="md:col-span-8 lg:col-span-9 bg-slate-900/90 border-2 border-cyan-500/30 rounded-3xl p-2 shadow-2xl backdrop-blur-xl flex flex-col items-center justify-center relative overflow-hidden h-full">
+            <div class="md:col-span-8 lg:col-span-9 bg-white/90 border-2 border-emerald-300 rounded-3xl p-2 shadow-2xl backdrop-blur-xl flex flex-col items-center justify-center relative overflow-hidden h-full">
                 <div id="game-hud" class="absolute top-4 left-6 right-6 flex justify-between items-center z-10 pointer-events-none">
-                    <span id="remaining-food-badge" class="text-2xl font-black text-neon-yellow bg-slate-950/80 px-4 py-2 rounded-xl border border-yellow-500/40">
+                    <span id="remaining-food-badge" class="text-2xl font-black text-amber-900 bg-amber-100/90 px-4 py-2 rounded-2xl border-2 border-amber-300 shadow">
                         🍎 剩餘物資：0/0
                     </span>
-                    <span id="game-status-hint" class="text-neon-green font-bold text-xl bg-slate-950/80 px-4 py-2 rounded-xl border border-green-500/40">
+                    <span id="game-status-hint" class="text-emerald-800 font-bold text-xl bg-emerald-100/90 px-4 py-2 rounded-2xl border-2 border-emerald-300 shadow">
                         接取正確物資+2分，不合適物資-1分！
                     </span>
                 </div>
-                <canvas id="gameCanvas" class="w-full h-full rounded-2xl bg-slate-950/90"></canvas>
+                <canvas id="gameCanvas" class="w-full h-full rounded-2xl bg-gradient-to-b from-sky-100 via-amber-50 to-emerald-100 border border-emerald-200"></canvas>
             </div>
         </div>
 
         <!-- 大螢幕 - 最後得獎頒獎畫面 -->
-        <div id="view-result" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-xl p-6">
-            <div class="w-full max-w-7xl h-full max-h-[90vh] bg-slate-900 border-2 border-neon-yellow rounded-3xl p-6 md:p-8 flex flex-col justify-between shadow-2xl overflow-hidden relative">
+        <div id="view-result" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-md p-6">
+            <div class="w-full max-w-7xl h-full max-h-[90vh] bg-gradient-to-b from-amber-50 to-orange-50 border-4 border-amber-300 rounded-3xl p-6 md:p-8 flex flex-col justify-between shadow-2xl overflow-hidden relative">
                 
-                <h2 class="text-3xl md:text-5xl font-black text-center text-transparent bg-clip-text bg-gradient-to-r from-neon-yellow via-amber-300 to-yellow-500 mb-2 flex-shrink-0">
-                    🏆 最終頒獎典禮 🏆
+                <h2 class="text-3xl md:text-5xl font-black text-center text-transparent bg-clip-text bg-gradient-to-r from-amber-600 via-rose-500 to-emerald-600 mb-2 flex-shrink-0 drop-shadow-sm">
+                    🏆 最終春日頒獎典禮 🏆
                 </h2>
 
                 <div class="grid grid-cols-1 md:grid-cols-12 gap-6 flex-grow overflow-hidden my-2">
                     
-                    <div class="md:col-span-3 bg-slate-950/60 rounded-2xl p-4 border border-slate-800 flex flex-col justify-between overflow-hidden">
-                        <div class="flex justify-between items-center mb-3 border-b border-slate-800 pb-2 flex-shrink-0">
-                            <span class="font-black text-xl md:text-2xl text-amber-300">全場排名 (左)</span>
-                            <span id="result-left-count" class="text-xs bg-slate-800 text-neon-yellow px-2.5 py-1 rounded-full font-bold">0 人</span>
+                    <div class="md:col-span-3 bg-white/80 rounded-2xl p-4 border border-amber-200 flex flex-col justify-between overflow-hidden shadow-sm">
+                        <div class="flex justify-between items-center mb-3 border-b border-amber-200 pb-2 flex-shrink-0">
+                            <span class="font-black text-xl md:text-2xl text-amber-800">全場排名 (左)</span>
+                            <span id="result-left-count" class="text-xs bg-amber-100 text-amber-800 px-2.5 py-1 rounded-full font-bold">0 人</span>
                         </div>
                         <div id="result-left-list" class="space-y-2 overflow-hidden pr-1 flex-grow"></div>
                     </div>
 
-                    <div class="md:col-span-6 bg-amber-950/20 border-2 border-amber-500/40 rounded-2xl p-6 flex flex-col items-center justify-center text-center overflow-hidden shadow-inner">
+                    <div class="md:col-span-6 bg-gradient-to-b from-amber-100/60 to-rose-100/60 border-2 border-amber-300 rounded-2xl p-6 flex flex-col items-center justify-center text-center overflow-hidden shadow-inner">
                         <div class="w-full flex flex-col items-center">
-                            <span class="text-amber-400 font-black tracking-widest text-sm mb-3">TOP 3 WINNERS</span>
+                            <span class="text-amber-800 font-black tracking-widest text-base mb-3 bg-white/80 px-4 py-1 rounded-full border border-amber-300">✨ TOP 3 WINNERS ✨</span>
                             <div id="top3-container" class="w-full flex flex-col items-center space-y-4 my-auto"></div>
                         </div>
                     </div>
 
-                    <div class="md:col-span-3 bg-slate-950/60 rounded-2xl p-4 border border-slate-800 flex flex-col justify-between overflow-hidden">
-                        <div class="flex justify-between items-center mb-3 border-b border-slate-800 pb-2 flex-shrink-0">
-                            <span class="font-black text-xl md:text-2xl text-amber-300">全場排名 (右)</span>
-                            <span id="result-right-count" class="text-xs bg-slate-800 text-neon-yellow px-2.5 py-1 rounded-full font-bold">0 人</span>
+                    <div class="md:col-span-3 bg-white/80 rounded-2xl p-4 border border-amber-200 flex flex-col justify-between overflow-hidden shadow-sm">
+                        <div class="flex justify-between items-center mb-3 border-b border-amber-200 pb-2 flex-shrink-0">
+                            <span class="font-black text-xl md:text-2xl text-amber-800">全場排名 (右)</span>
+                            <span id="result-right-count" class="text-xs bg-amber-100 text-amber-800 px-2.5 py-1 rounded-full font-bold">0 人</span>
                         </div>
                         <div id="result-right-list" class="space-y-2 overflow-hidden pr-1 flex-grow"></div>
                     </div>
@@ -271,7 +280,7 @@
 
     </main>
 
-    <footer id="main-footer" class="w-full py-2 px-4 border-t border-slate-800 bg-slate-950/80 text-center text-slate-500 text-sm flex-shrink-0">
+    <footer id="main-footer" class="w-full py-2 px-4 border-t border-amber-200/60 bg-white/60 text-center text-slate-600 text-sm flex-shrink-0">
         安得烈食物銀行 關懷弱勢・愛合格不浪費 | 食物接接樂互動遊戲
     </footer>
 
@@ -341,6 +350,10 @@
         let myPlayerId = null;
         let myAvatar = '🐱';
 
+        // 體感傾斜控制變數
+        let zeroGamma = 0; // 零點基準角
+        let isOrientationBound = false;
+
         // 遊戲運行設定參數
         let totalFoodToSpawn = 40;
         let foodDropSpeed = 3.5;
@@ -387,11 +400,11 @@
                     conn.on('data', (data) => {
                         if (data.type === 'JOIN') {
                             addPlayer(data.name, conn, data.playerId);
-                        } else if (data.type === 'MOVE') {
+                        } else if (data.type === 'TILT') {
                             const p = players.find(player => player.id === data.playerId);
                             if (p) {
-                                if (data.dir === 'left') p.x = Math.max(0.05, p.x - 0.08);
-                                if (data.dir === 'right') p.x = Math.min(0.95, p.x + 0.08);
+                                // 根據傾斜量更新歸一化位置 (x: 0.05 ~ 0.95)
+                                p.x = Math.max(0.05, Math.min(0.95, p.x + data.deltaX));
                             }
                         }
                     });
@@ -421,32 +434,70 @@
                         avatarEl.innerText = myAvatar;
                         avatarEl.classList.remove('hidden');
                     } else if (data.type === 'GAME_START') {
-                        document.getElementById('mobile-status-text').innerText = '🎮 遊戲開始，控制您的動物接取物資！';
+                        document.getElementById('mobile-status-text').innerText = '🎮 遊戲開始，傾斜手機接取物資！';
                         document.getElementById('mobile-controls').classList.remove('hidden');
                         document.getElementById('mobile-controls').classList.add('flex');
+                        startOrientationListener();
                     } else if (data.type === 'FINAL_RESULT') {
                         showMobileFinalResult(data.rank, data.score, data.totalPlayers);
                     }
                 });
             });
 
-            // 設定搖桿/按鈕事件
-            document.getElementById('btn-move-left').addEventListener('click', () => {
-                if (hostConn && hostConn.open) {
-                    hostConn.send({ type: 'MOVE', playerId: myPlayerId, dir: 'left' });
-                }
+            document.getElementById('btn-recalibrate').addEventListener('click', () => {
+                zeroGamma = currentGamma;
             });
+        }
 
-            document.getElementById('btn-move-right').addEventListener('click', () => {
-                if (hostConn && hostConn.open) {
-                    hostConn.send({ type: 'MOVE', playerId: myPlayerId, dir: 'right' });
+        let currentGamma = 0;
+
+        function startOrientationListener() {
+            if (isOrientationBound) return;
+
+            const handleOrientation = (e) => {
+                let gamma = e.gamma || 0; // 左右傾斜角 -90 ~ 90
+                currentGamma = gamma;
+
+                const relativeGamma = Math.max(-30, Math.min(30, gamma - zeroGamma));
+                
+                // UI 顯示回饋
+                const indicator = document.getElementById('tilt-indicator');
+                const angleText = document.getElementById('tilt-angle-text');
+                if (indicator && angleText) {
+                    const percent = 50 + (relativeGamma / 30) * 40;
+                    indicator.style.left = `${percent}%`;
+                    angleText.innerText = `${Math.round(relativeGamma)}°`;
                 }
-            });
+
+                // 傳送移動偏移增量至大螢幕
+                if (hostConn && hostConn.open && Math.abs(relativeGamma) > 2) {
+                    const deltaX = (relativeGamma / 30) * 0.025;
+                    hostConn.send({ type: 'TILT', playerId: myPlayerId, deltaX: deltaX });
+                }
+            };
+
+            // iOS 13+ 權限請求
+            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+                DeviceOrientationEvent.requestPermission().then(response => {
+                    if (response === 'granted') {
+                        window.addEventListener('deviceorientation', handleOrientation);
+                        isOrientationBound = true;
+                    }
+                }).catch(console.error);
+            } else {
+                window.addEventListener('deviceorientation', handleOrientation);
+                isOrientationBound = true;
+            }
         }
 
         document.getElementById('btn-mobile-join').addEventListener('click', () => {
             const name = document.getElementById('mobile-name-input').value.trim();
             if (!name) return alert('請輸入暱稱！');
+
+            // 觸發 iOS 裝置的陀螺儀權限請求（必須於用戶點擊事件觸發）
+            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+                DeviceOrientationEvent.requestPermission().catch(() => {});
+            }
 
             if (hostConn && hostConn.open) {
                 hostConn.send({ type: 'JOIN', name: name, playerId: myPlayerId });
@@ -555,13 +606,13 @@
 
             players.forEach(p => {
                 const item = document.createElement('div');
-                item.className = 'flex justify-between items-center bg-slate-800 p-2.5 rounded-xl border border-slate-700 text-sm';
+                item.className = 'flex justify-between items-center bg-white p-2.5 rounded-xl border border-amber-200 text-sm shadow-sm';
                 item.innerHTML = `
                     <div class="flex items-center gap-2 truncate">
                         <span class="text-2xl">${p.avatar}</span>
-                        <span class="font-bold text-white truncate">${p.displayName || p.name}</span>
+                        <span class="font-bold text-slate-700 truncate">${p.displayName || p.name}</span>
                     </div>
-                    <span class="text-[10px] ${p.isAI ? 'bg-purple-900/80 text-purple-300' : 'bg-cyan-900/80 text-cyan-300'} px-2 py-0.5 rounded font-bold flex-shrink-0">
+                    <span class="text-[10px] ${p.isAI ? 'bg-amber-100 text-amber-800 border-amber-300' : 'bg-emerald-100 text-emerald-800 border-emerald-300'} px-2 py-0.5 rounded font-bold border flex-shrink-0">
                         ${p.isAI ? 'AI' : '連線'}
                     </span>
                 `;
@@ -656,7 +707,7 @@
                 ctx.fillText(food.icon, drawX, drawY);
 
                 ctx.font = 'bold 14px "Noto Sans TC"';
-                ctx.fillStyle = food.score > 0 ? '#00ff66' : '#ff007f';
+                ctx.fillStyle = food.score > 0 ? '#15803d' : '#e11d48';
                 ctx.fillText(food.name, drawX, drawY + 20);
 
                 // 檢測是否碰撞玩家（角色置於畫布底部 10% 處）
@@ -686,12 +737,12 @@
 
                 // 玩家名稱
                 ctx.font = 'bold 16px "Noto Sans TC"';
-                ctx.fillStyle = '#ffffff';
+                ctx.fillStyle = '#1e293b';
                 ctx.fillText(p.displayName || p.name, px, py + 25);
 
                 // 分數標籤
-                ctx.font = 'black 14px "Noto Sans TC"';
-                ctx.fillStyle = '#ffcc00';
+                ctx.font = '900 14px "Noto Sans TC"';
+                ctx.fillStyle = '#d97706';
                 ctx.fillText(`${p.score} 分`, px, py + 45);
             });
 
@@ -718,15 +769,15 @@
                 const card = document.createElement('div');
                 const displayName = p.displayName || p.name;
 
-                card.className = `p-2.5 md:p-3 rounded-2xl border-2 border-slate-800 bg-slate-900/70 flex items-center justify-between transition-all duration-200 flex-shrink-0`;
+                card.className = `p-2.5 md:p-3 rounded-2xl border border-amber-200 bg-white/90 flex items-center justify-between transition-all duration-200 flex-shrink-0 shadow-sm`;
                 card.innerHTML = `
                     <div class="flex items-center gap-2.5 truncate max-w-[65%]">
-                        <span class="font-black text-neon-blue text-lg md:text-xl min-w-[30px] text-center">#${rank + 1}</span>
+                        <span class="font-black text-emerald-700 text-lg md:text-xl min-w-[30px] text-center">#${rank + 1}</span>
                         <span class="text-2xl flex-shrink-0">${p.avatar}</span>
-                        <span class="font-black text-white text-xl md:text-2xl truncate tracking-wide leading-tight">${displayName}</span>
+                        <span class="font-black text-slate-800 text-xl md:text-2xl truncate tracking-wide leading-tight">${displayName}</span>
                     </div>
                     <div class="flex items-center gap-2.5 flex-shrink-0">
-                        <span class="text-neon-yellow font-black text-xl md:text-2xl">${p.score} 分</span>
+                        <span class="text-amber-600 font-black text-xl md:text-2xl">${p.score} 分</span>
                     </div>
                 `;
                 dashboard.appendChild(card);
@@ -739,15 +790,15 @@
             playerGroup.forEach((p, idx) => {
                 const rankNum = startIndex + idx;
                 const item = document.createElement('div');
-                item.className = 'flex flex-col p-2.5 bg-slate-900 rounded-xl border border-slate-800 text-sm gap-1';
+                item.className = 'flex flex-col p-2.5 bg-white rounded-xl border border-amber-200 text-sm gap-1 shadow-sm';
                 item.innerHTML = `
                     <div class="flex items-center gap-2 truncate w-full">
-                        <span class="font-bold text-slate-500 text-xs w-6 flex-shrink-0">#${rankNum}</span>
+                        <span class="font-bold text-amber-800 text-xs w-6 flex-shrink-0">#${rankNum}</span>
                         <span class="text-xl">${p.avatar}</span>
-                        <span class="font-bold text-slate-300 truncate">${p.name}</span>
+                        <span class="font-bold text-slate-700 truncate">${p.name}</span>
                     </div>
                     <div class="text-right w-full pl-8">
-                        <span class="font-black text-slate-200">${p.score} 分</span>
+                        <span class="font-black text-amber-600">${p.score} 分</span>
                     </div>
                 `;
                 container.appendChild(item);
@@ -787,7 +838,7 @@
 
             const top3 = allSortedPlayers.slice(0, 3);
             const medals = ['🥇 第一名 冠軍', '🥈 第二名 亞軍', '🥉 第三名 季軍'];
-            const colors = ['border-amber-400 bg-amber-500/20 shadow-[0_0_30px_rgba(255,204,0,0.3)]', 'border-slate-300 bg-slate-400/20', 'border-amber-700 bg-amber-800/20'];
+            const colors = ['border-amber-400 bg-amber-100/80 shadow-md', 'border-slate-300 bg-slate-100/80', 'border-orange-300 bg-orange-100/80'];
 
             top3.forEach((p, idx) => {
                 const card = document.createElement('div');
@@ -795,10 +846,10 @@
                 if (idx === 0) {
                     card.className = `w-full max-w-md p-5 rounded-3xl border-4 ${colors[idx]} flex flex-col items-center justify-center my-1`;
                     card.innerHTML = `
-                        <span class="text-sm font-black text-amber-300 bg-amber-950/80 px-4 py-1 rounded-full border border-amber-400 mb-1">👑 冠軍王座 👑</span>
+                        <span class="text-sm font-black text-amber-900 bg-amber-200 px-4 py-1 rounded-full border border-amber-400 mb-1">👑 春日冠軍王座 👑</span>
                         <div class="text-6xl my-1">${p.avatar}</div>
-                        <div class="text-3xl font-black text-white tracking-wide text-center">${p.name}</div>
-                        <div class="text-2xl font-black text-neon-yellow mt-2">${p.score} 分</div>
+                        <div class="text-3xl font-black text-slate-800 tracking-wide text-center">${p.name}</div>
+                        <div class="text-2xl font-black text-amber-600 mt-2">${p.score} 分</div>
                     `;
                 } else {
                     card.className = `w-full max-w-md p-4 rounded-2xl border-2 ${colors[idx]} flex justify-between items-center px-6`;
@@ -806,12 +857,12 @@
                         <div class="flex items-center gap-4">
                             <span class="text-4xl">${p.avatar}</span>
                             <div class="text-left">
-                                <span class="text-xs font-bold text-slate-400">${medals[idx]}</span>
-                                <div class="text-2xl font-black text-white">${p.name}</div>
+                                <span class="text-xs font-bold text-slate-500">${medals[idx]}</span>
+                                <div class="text-2xl font-black text-slate-800">${p.name}</div>
                             </div>
                         </div>
                         <div class="text-right">
-                            <div class="text-xl font-black text-neon-yellow">${p.score} 分</div>
+                            <div class="text-xl font-black text-amber-600">${p.score} 分</div>
                         </div>
                     `;
                 }
@@ -820,8 +871,8 @@
 
             // 慶祝花火特效
             confetti({
-                particleCount: 100,
-                spread: 70,
+                particleCount: 120,
+                spread: 80,
                 origin: { y: 0.6 }
             });
         }
