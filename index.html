@@ -1,1 +1,830 @@
+<!DOCTYPE html>
+<html lang="zh-TW" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>安得烈食物銀行 - 食物接接樂大亂鬥</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- PeerJS & QRCode.js -->
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <!-- Canvas Confetti CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <!-- FontAwesome CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        neon: {
+                            blue: '#00f3ff',
+                            purple: '#b000ff',
+                            pink: '#ff007f',
+                            green: '#00ff66',
+                            yellow: '#ffcc00'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap');
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #0b0f19;
+            color: #f3f4f6;
+            user-select: none;
+            overflow: hidden;
+        }
+
+        * {
+            scrollbar-width: none !important;
+            -ms-overflow-style: none !important;
+        }
+        *::-webkit-scrollbar {
+            display: none !important;
+            width: 0 !important;
+            height: 0 !important;
+        }
+
+        #qrcode canvas, #qrcode img {
+            margin: 0 auto;
+            display: block;
+            max-width: 100%;
+            height: auto;
+        }
+    </style>
+</head>
+<body class="h-screen w-screen flex flex-col justify-between overflow-hidden bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-900 via-purple-950 to-slate-950">
+
+    <!-- 頂部 Header -->
+    <header id="main-header" class="w-full px-6 py-3 border-b border-slate-800 bg-slate-900/60 backdrop-blur-md flex justify-between items-center z-10 flex-shrink-0">
+        <div class="flex items-center space-x-3">
+            <span class="text-3xl">🍞</span>
+            <h1 class="text-2xl md:text-3xl font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-neon-blue via-neon-purple to-neon-pink">
+                安得烈食物銀行 - 食物接接樂
+            </h1>
+        </div>
+        <div id="game-stage-badge" class="hidden px-4 py-1.5 rounded-full text-sm md:text-lg font-bold bg-slate-800 border border-cyan-500/50 text-cyan-400">
+            準備中
+        </div>
+    </header>
+
+    <!-- 主要內容區域 -->
+    <main class="flex-grow flex items-center justify-center p-2 md:p-4 relative overflow-hidden">
+
+        <!-- 大螢幕 - 遊戲大廳 / 掃碼進入 -->
+        <div id="view-lobby" class="w-full max-w-[96vw] h-full max-h-[90vh] bg-slate-900/80 border-2 border-slate-700/80 rounded-2xl p-4 md:p-6 shadow-2xl backdrop-blur-xl relative flex flex-col justify-between overflow-hidden">
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-center h-full">
+                
+                <!-- 左側：QR Code -->
+                <div class="md:col-span-6 lg:col-span-7 flex flex-col items-center justify-center border-b md:border-b-0 md:border-r border-slate-700/80 pr-0 md:pr-6 pb-2 md:pb-0 text-center h-full overflow-hidden">
+                    <div class="p-5 bg-gradient-to-br from-cyan-400 via-purple-500 to-pink-500 rounded-3xl shadow-[0_0_70px_rgba(0,243,255,0.5)] my-auto transition-transform hover:scale-[1.02] duration-300">
+                        <div id="qrcode" class="bg-white p-4 rounded-2xl border-2 border-white flex items-center justify-center shadow-inner"></div>
+                    </div>
+                </div>
+
+                <!-- 右側：玩家名單 & 設定選項 & 開始按鈕 -->
+                <div class="md:col-span-6 lg:col-span-5 flex flex-col justify-between h-full overflow-hidden pl-0 md:pl-2">
+                    <div class="flex-grow flex flex-col overflow-hidden">
+                        <h2 class="text-2xl md:text-3xl font-bold text-neon-purple mb-4 flex items-center justify-between flex-shrink-0">
+                            <span class="flex items-center gap-2"><i class="fa-solid fa-users"></i> 已加入人員名單</span>
+                            <span id="player-count-badge" class="text-xl bg-purple-900/80 text-purple-300 px-4 py-1.5 rounded-full font-black border border-purple-500/50">0 人</span>
+                        </h2>
+
+                        <div id="player-list-lobby" class="grid grid-cols-2 lg:grid-cols-3 gap-2.5 overflow-hidden flex-grow content-start">
+                            <div class="col-span-full text-slate-500 text-center py-12 font-bold border border-dashed border-slate-800 rounded-xl text-lg">
+                                尚無玩家連線，請掃描左側 QR Code 加入...
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 遊戲參數設定區塊 (右下角選單) -->
+                    <div class="w-full pt-4 flex-shrink-0 bg-slate-950/60 border border-slate-800 rounded-2xl p-4 my-2">
+                        <h3 class="text-neon-blue font-bold text-base mb-2 flex items-center gap-2">
+                            <i class="fa-solid fa-sliders"></i> 遊戲模式設定
+                        </h3>
+                        <div class="grid grid-cols-3 gap-3">
+                            <div class="flex flex-col gap-1">
+                                <label for="select-food-count" class="text-xs text-slate-400 font-bold">食物數量</label>
+                                <select id="select-food-count" class="bg-slate-800 text-white font-bold p-2 rounded-xl border border-slate-700 outline-none focus:border-neon-purple cursor-pointer">
+                                    <option value="20">20 個</option>
+                                    <option value="40" selected>40 個</option>
+                                    <option value="60">60 個</option>
+                                    <option value="80">80 個</option>
+                                    <option value="100">100 個</option>
+                                </select>
+                            </div>
+                            <div class="flex flex-col gap-1">
+                                <label for="select-drop-speed" class="text-xs text-slate-400 font-bold">掉落速度</label>
+                                <select id="select-drop-speed" class="bg-slate-800 text-white font-bold p-2 rounded-xl border border-slate-700 outline-none focus:border-neon-purple cursor-pointer">
+                                    <option value="1.5">超緩慢</option>
+                                    <option value="2.5">緩慢</option>
+                                    <option value="3.5" selected>正常</option>
+                                    <option value="5.0">快速</option>
+                                    <option value="7.0">極速</option>
+                                </select>
+                            </div>
+                            <div class="flex flex-col gap-1">
+                                <label for="select-ai-count" class="text-xs text-slate-400 font-bold">AI參賽人數</label>
+                                <select id="select-ai-count" class="bg-slate-800 text-white font-bold p-2 rounded-xl border border-slate-700 outline-none focus:border-neon-purple cursor-pointer">
+                                    <option value="1" selected>1 名</option>
+                                    <option value="2">2 名</option>
+                                    <option value="3">3 名</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="lobby-start-box" class="w-full pt-2 flex-shrink-0">
+                        <button id="btn-start-game" class="hidden w-full py-4 text-3xl font-black text-slate-950 bg-gradient-to-r from-neon-green to-neon-yellow rounded-2xl shadow-[0_0_30px_rgba(0,255,102,0.5)] hover:brightness-110 active:scale-95 transition-all animate-bounce border-2 border-white/40">
+                            🎮 開始遊戲
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- 手機端 - 玩家控制器 (搖桿/按鈕控制移動) -->
+        <div id="view-player-mobile" class="hidden fixed inset-0 z-50 bg-slate-950 p-4 flex-col justify-between overflow-hidden">
+            <div id="mobile-top-bar" class="text-center space-y-1 flex-shrink-0">
+                <span class="text-3xl">🍞</span>
+                <h2 class="text-xl font-black text-neon-blue">安得烈食物接接樂控制器</h2>
+                <p id="player-mobile-name" class="text-neon-yellow font-bold text-base">正在連線大螢幕...</p>
+                <div id="mobile-avatar-display" class="hidden text-5xl py-2 animate-bounce">
+                    🐱
+                </div>
+            </div>
+
+            <div id="mobile-join-form" class="space-y-4 bg-slate-900 p-6 rounded-2xl border border-slate-800 my-auto">
+                <input type="text" id="mobile-name-input" maxlength="8" placeholder="請輸入您的暱稱..." 
+                    class="w-full bg-slate-800 border-2 border-slate-700 p-4 rounded-xl text-center text-white text-xl font-bold focus:border-neon-purple outline-none">
+                <button id="btn-mobile-join" class="w-full py-4 bg-gradient-to-r from-neon-blue to-neon-purple text-black font-black text-xl rounded-xl shadow-lg">
+                    確認參賽
+                </button>
+            </div>
+
+            <!-- 控制搖桿按鈕 -->
+            <div id="mobile-controls" class="hidden flex-col items-center gap-6 w-full my-auto">
+                <div class="text-slate-300 font-bold text-lg text-center">請點擊左右按鈕移動您的動物角色！</div>
+                <div class="grid grid-cols-2 gap-6 w-full max-w-xs h-40">
+                    <button id="btn-move-left" class="bg-blue-600 active:bg-blue-700 rounded-3xl text-6xl text-white font-black shadow-2xl flex items-center justify-center border-4 border-blue-400">
+                        ◀
+                    </button>
+                    <button id="btn-move-right" class="bg-purple-600 active:bg-purple-700 rounded-3xl text-6xl text-white font-black shadow-2xl flex items-center justify-center border-4 border-purple-400">
+                        ▶
+                    </button>
+                </div>
+            </div>
+
+            <!-- 手機端 - 最終結算 -->
+            <div id="mobile-final-result" class="hidden my-auto flex-col items-center justify-center space-y-4 text-center bg-slate-900 border-2 border-neon-yellow p-8 rounded-3xl shadow-2xl w-full">
+                <span class="text-6xl" id="mobile-result-icon">🏆</span>
+                <h2 class="text-2xl font-black text-neon-yellow">遊戲最終結算</h2>
+                
+                <div class="flex flex-col items-center space-y-1 my-2">
+                    <div class="text-5xl font-black text-white tracking-wider" id="mobile-result-rank">第 - 名</div>
+                    <div class="text-lg font-bold text-slate-400" id="mobile-result-total">共 - 人</div>
+                </div>
+
+                <div class="text-2xl font-bold text-slate-300">總得分：<span id="mobile-result-score" class="text-neon-green">0</span> 分</div>
+                
+                <div id="mobile-result-status" class="text-base font-bold text-cyan-400 pt-2">感謝您的熱情參與！</div>
+            </div>
+
+            <div id="mobile-status-text" class="text-center text-slate-400 font-bold py-1 text-sm flex-shrink-0">
+                連線成功！請輸入暱稱完成登錄
+            </div>
+        </div>
+
+        <!-- 大螢幕 - 遊戲主畫面 (Canvas 遊戲場景) -->
+        <div id="view-game" class="hidden w-full h-full max-h-[96vh] grid grid-cols-1 md:grid-cols-12 gap-4 overflow-hidden">
+            
+            <!-- 左側：排行榜 -->
+            <div class="md:col-span-4 lg:col-span-3 bg-slate-900/80 border border-slate-800 rounded-2xl p-3 backdrop-blur-xl flex flex-col justify-between overflow-hidden h-full">
+                <div class="overflow-hidden flex flex-col h-full">
+                    <h3 class="text-slate-300 text-xl md:text-2xl font-black mb-3 flex items-center justify-between flex-shrink-0 border-b border-slate-800 pb-2">
+                        <span>🔥 實時全場得分榜</span>
+                        <span id="game-total-players-badge" class="text-base bg-cyan-950 text-neon-blue px-3 py-1 rounded-full border border-cyan-800">0 人</span>
+                    </h3>
+                    <div id="players-dashboard" class="flex flex-col space-y-2.5 overflow-hidden flex-grow"></div>
+                </div>
+            </div>
+
+            <!-- 右側：遊戲畫布 -->
+            <div class="md:col-span-8 lg:col-span-9 bg-slate-900/90 border-2 border-cyan-500/30 rounded-3xl p-2 shadow-2xl backdrop-blur-xl flex flex-col items-center justify-center relative overflow-hidden h-full">
+                <div id="game-hud" class="absolute top-4 left-6 right-6 flex justify-between items-center z-10 pointer-events-none">
+                    <span id="remaining-food-badge" class="text-2xl font-black text-neon-yellow bg-slate-950/80 px-4 py-2 rounded-xl border border-yellow-500/40">
+                        🍎 剩餘物資：0/0
+                    </span>
+                    <span id="game-status-hint" class="text-neon-green font-bold text-xl bg-slate-950/80 px-4 py-2 rounded-xl border border-green-500/40">
+                        接取正確物資+2分，不合適物資-1分！
+                    </span>
+                </div>
+                <canvas id="gameCanvas" class="w-full h-full rounded-2xl bg-slate-950/90"></canvas>
+            </div>
+        </div>
+
+        <!-- 大螢幕 - 最後得獎頒獎畫面 -->
+        <div id="view-result" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-xl p-6">
+            <div class="w-full max-w-7xl h-full max-h-[90vh] bg-slate-900 border-2 border-neon-yellow rounded-3xl p-6 md:p-8 flex flex-col justify-between shadow-2xl overflow-hidden relative">
+                
+                <h2 class="text-3xl md:text-5xl font-black text-center text-transparent bg-clip-text bg-gradient-to-r from-neon-yellow via-amber-300 to-yellow-500 mb-2 flex-shrink-0">
+                    🏆 最終頒獎典禮 🏆
+                </h2>
+
+                <div class="grid grid-cols-1 md:grid-cols-12 gap-6 flex-grow overflow-hidden my-2">
+                    
+                    <div class="md:col-span-3 bg-slate-950/60 rounded-2xl p-4 border border-slate-800 flex flex-col justify-between overflow-hidden">
+                        <div class="flex justify-between items-center mb-3 border-b border-slate-800 pb-2 flex-shrink-0">
+                            <span class="font-black text-xl md:text-2xl text-amber-300">全場排名 (左)</span>
+                            <span id="result-left-count" class="text-xs bg-slate-800 text-neon-yellow px-2.5 py-1 rounded-full font-bold">0 人</span>
+                        </div>
+                        <div id="result-left-list" class="space-y-2 overflow-hidden pr-1 flex-grow"></div>
+                    </div>
+
+                    <div class="md:col-span-6 bg-amber-950/20 border-2 border-amber-500/40 rounded-2xl p-6 flex flex-col items-center justify-center text-center overflow-hidden shadow-inner">
+                        <div class="w-full flex flex-col items-center">
+                            <span class="text-amber-400 font-black tracking-widest text-sm mb-3">TOP 3 WINNERS</span>
+                            <div id="top3-container" class="w-full flex flex-col items-center space-y-4 my-auto"></div>
+                        </div>
+                    </div>
+
+                    <div class="md:col-span-3 bg-slate-950/60 rounded-2xl p-4 border border-slate-800 flex flex-col justify-between overflow-hidden">
+                        <div class="flex justify-between items-center mb-3 border-b border-slate-800 pb-2 flex-shrink-0">
+                            <span class="font-black text-xl md:text-2xl text-amber-300">全場排名 (右)</span>
+                            <span id="result-right-count" class="text-xs bg-slate-800 text-neon-yellow px-2.5 py-1 rounded-full font-bold">0 人</span>
+                        </div>
+                        <div id="result-right-list" class="space-y-2 overflow-hidden pr-1 flex-grow"></div>
+                    </div>
+
+                </div>
+
+            </div>
+        </div>
+
+    </main>
+
+    <footer id="main-footer" class="w-full py-2 px-4 border-t border-slate-800 bg-slate-950/80 text-center text-slate-500 text-sm flex-shrink-0">
+        安得烈食物銀行 關懷弱勢・愛合格不浪費 | 食物接接樂互動遊戲
+    </footer>
+
+    <script>
+        // 動物角色清單
+        const animalAvatars = ['🐶', '🐱', '🐭', '🐹', '🐰', '🦊', '🐻', '🐼', '🐨', '🐯', '🦁', '🐮', '🐷', '🐸', '🐵', '🐔', '🐧', '🐦', '🦄'];
+
+        // 正確物資選單（+2分）
+        const validFoodPool = [
+            // 1. 嬰兒與幼兒物資
+            { name: "嬰兒奶粉", icon: "🍼", score: 2 },
+            { name: "嬰幼兒尿布", icon: "👶", score: 2 },
+            { name: "嬰幼兒濕紙巾", icon: "🧻", score: 2 },
+            { name: "衛生紙", icon: "🧻", score: 2 },
+            
+            // 2. 一般膳糧物資
+            { name: "保久乳", icon: "🥛", score: 2 },
+            { name: "肉鬆", icon: "🥫", score: 2 },
+            { name: "沖泡麥片", icon: "🥣", score: 2 },
+            { name: "肉類罐頭", icon: "🥫", score: 2 },
+            { name: "玉米罐頭", icon: "🌽", score: 2 },
+            { name: "麵條", icon: "🍜", score: 2 },
+            { name: "肉類調理包", icon: "🍲", score: 2 },
+            { name: "白米", icon: "🍚", score: 2 },
+            
+            // 3. 素食膳糧物資
+            { name: "素肉鬆", icon: "🌱", score: 2 },
+            { name: "素食調理包", icon: "🥗", score: 2 },
+            
+            // 4 & 5. 長者/長青與易咬物資
+            { name: "滴雞精", icon: "🐔", score: 2 },
+            { name: "軟質粥品", icon: "🥣", score: 2 },
+            { name: "易咬餅乾", icon: "🍪", score: 2 },
+            
+            // 6. 專案物資
+            { name: "醫囑營養品", icon: "💊", score: 2 },
+            { name: "尿布", icon: "👶", score: 2 },
+            { name: "專案物資", icon: "📦", score: 2 },
+            
+            // 7. 年菜與特色食物箱
+            { name: "養生珍菇雞湯", icon: "🍲", score: 2 },
+            { name: "花生豬腳", icon: "🍖", score: 2 },
+            { name: "佛跳牆", icon: "🍲", score: 2 },
+            { name: "紅燒羊肉爐", icon: "🍲", score: 2 },
+            { name: "筍乾焢肉", icon: "🥩", score: 2 },
+            { name: "櫻花蝦米糕", icon: "🍚", score: 2 }
+        ];
+
+        // 不可放入物資選單（-1分）
+        const invalidFoodPool = [
+            { name: "辣味豆干", icon: "🌶️", score: -1 },
+            { name: "辣味罐頭", icon: "🌶️", score: -1 },
+            { name: "玻璃罐頭", icon: "🫙", score: -1 },
+            { name: "辣味調理包", icon: "🌶️", score: -1 },
+            { name: "麻辣鴨血", icon: "🥘", score: -1 },
+            { name: "咖啡", icon: "☕", score: -1 },
+            { name: "洋芋片", icon: "🥔", score: -1 },
+            { name: "泡麵", icon: "🍜", score: -1 },
+            { name: "碳酸飲料", icon: "🥤", score: -1 },
+            { name: "生鮮蔬菜", icon: "🥬", score: -1 },
+            { name: "醬瓜罐頭", icon: "🫙", score: -1 }
+        ];
+
+        let peer = null;
+        let hostConn = null;
+        let players = [];
+        let myPlayerId = null;
+        let myAvatar = '🐱';
+
+        // 遊戲運行設定參數
+        let totalFoodToSpawn = 40;
+        let foodDropSpeed = 3.5;
+        let spawnedFoodCount = 0;
+        let activeFoods = [];
+        let gameLoopId = null;
+        let isGameRunning = false;
+
+        // Canvas 設定
+        let canvas, ctx;
+
+        window.onload = () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const hostId = urlParams.get('host');
+
+            if (hostId) {
+                document.getElementById('main-header').classList.add('hidden');
+                document.getElementById('main-footer').classList.add('hidden');
+                document.getElementById('view-lobby').style.display = 'none';
+                document.getElementById('view-player-mobile').classList.remove('hidden');
+                document.getElementById('view-player-mobile').classList.add('flex');
+                initMobileController(hostId);
+            } else {
+                initHostPeer();
+            }
+        };
+
+        function initHostPeer() {
+            peer = new Peer();
+            
+            peer.on('open', (id) => {
+                const joinUrl = `${window.location.href.split('?')[0]}?host=${id}`;
+                document.getElementById("qrcode").innerHTML = "";
+                
+                new QRCode(document.getElementById("qrcode"), {
+                    text: joinUrl,
+                    width: 480,
+                    height: 480
+                });
+            });
+
+            peer.on('connection', (conn) => {
+                conn.on('open', () => {
+                    conn.on('data', (data) => {
+                        if (data.type === 'JOIN') {
+                            addPlayer(data.name, conn, data.playerId);
+                        } else if (data.type === 'MOVE') {
+                            const p = players.find(player => player.id === data.playerId);
+                            if (p) {
+                                if (data.dir === 'left') p.x = Math.max(0.05, p.x - 0.08);
+                                if (data.dir === 'right') p.x = Math.min(0.95, p.x + 0.08);
+                            }
+                        }
+                    });
+
+                    conn.on('close', () => {
+                        players = players.filter(p => p.conn !== conn);
+                        renderLobbyPlayers();
+                    });
+                });
+            });
+        }
+
+        function initMobileController(hostId) {
+            peer = new Peer();
+            peer.on('open', (id) => {
+                myPlayerId = 'p_' + id;
+                hostConn = peer.connect(hostId);
+
+                hostConn.on('open', () => {
+                    document.getElementById('player-mobile-name').innerText = "已連線至大螢幕";
+                });
+
+                hostConn.on('data', (data) => {
+                    if (data.type === 'ASSIGN_AVATAR') {
+                        myAvatar = data.avatar;
+                        const avatarEl = document.getElementById('mobile-avatar-display');
+                        avatarEl.innerText = myAvatar;
+                        avatarEl.classList.remove('hidden');
+                    } else if (data.type === 'GAME_START') {
+                        document.getElementById('mobile-status-text').innerText = '🎮 遊戲開始，控制您的動物接取物資！';
+                        document.getElementById('mobile-controls').classList.remove('hidden');
+                        document.getElementById('mobile-controls').classList.add('flex');
+                    } else if (data.type === 'FINAL_RESULT') {
+                        showMobileFinalResult(data.rank, data.score, data.totalPlayers);
+                    }
+                });
+            });
+
+            // 設定搖桿/按鈕事件
+            document.getElementById('btn-move-left').addEventListener('click', () => {
+                if (hostConn && hostConn.open) {
+                    hostConn.send({ type: 'MOVE', playerId: myPlayerId, dir: 'left' });
+                }
+            });
+
+            document.getElementById('btn-move-right').addEventListener('click', () => {
+                if (hostConn && hostConn.open) {
+                    hostConn.send({ type: 'MOVE', playerId: myPlayerId, dir: 'right' });
+                }
+            });
+        }
+
+        document.getElementById('btn-mobile-join').addEventListener('click', () => {
+            const name = document.getElementById('mobile-name-input').value.trim();
+            if (!name) return alert('請輸入暱稱！');
+
+            if (hostConn && hostConn.open) {
+                hostConn.send({ type: 'JOIN', name: name, playerId: myPlayerId });
+                document.getElementById('player-mobile-name').innerText = `玩家：${name}`;
+                document.getElementById('mobile-join-form').classList.add('hidden');
+                document.getElementById('mobile-status-text').innerText = '已成功進入大廳，等待開賽...';
+            }
+        });
+
+        function showMobileFinalResult(rank, score, totalPlayers) {
+            document.getElementById('mobile-top-bar').classList.add('hidden');
+            document.getElementById('mobile-controls').classList.add('hidden');
+            document.getElementById('mobile-status-text').classList.add('hidden');
+
+            const resultBox = document.getElementById('mobile-final-result');
+            resultBox.classList.remove('hidden');
+            resultBox.classList.add('flex');
+
+            document.getElementById('mobile-result-rank').innerText = `第 ${rank} 名`;
+            document.getElementById('mobile-result-total').innerText = `共 ${totalPlayers} 人`;
+            document.getElementById('mobile-result-score').innerText = score;
+
+            const iconEl = document.getElementById('mobile-result-icon');
+            const statusEl = document.getElementById('mobile-result-status');
+
+            if (rank === 1) {
+                iconEl.innerText = '🥇';
+                statusEl.innerText = '🎉 恭喜榮獲 全場總冠軍！';
+            } else if (rank === 2) {
+                iconEl.innerText = '🥈';
+                statusEl.innerText = '✨ 恭喜榮獲 亞軍殊榮！';
+            } else if (rank === 3) {
+                iconEl.innerText = '🥉';
+                statusEl.innerText = '👏 恭喜榮獲 季軍佳績！';
+            } else {
+                iconEl.innerText = '🏅';
+                statusEl.innerText = `感謝您的參與！表現相當精彩！`;
+            }
+        }
+
+        function getRandomAvatar() {
+            return animalAvatars[Math.floor(Math.random() * animalAvatars.length)];
+        }
+
+        function addPlayer(name, conn, playerId) {
+            if (players.some(p => p.id === playerId)) return;
+
+            const assignedAvatar = getRandomAvatar();
+
+            const p = {
+                id: playerId,
+                name: name,
+                displayName: name,
+                avatar: assignedAvatar,
+                conn: conn,
+                isAI: false,
+                score: 0,
+                x: 0.1 + Math.random() * 0.8 // 歸一化橫向座標 (0.05 - 0.95)
+            };
+            players.push(p);
+
+            if (conn) {
+                conn.send({ type: 'ASSIGN_AVATAR', avatar: assignedAvatar });
+            }
+
+            renderLobbyPlayers();
+
+            if (players.length >= 1) {
+                document.getElementById('btn-start-game').classList.remove('hidden');
+            }
+        }
+
+        document.getElementById('btn-start-game').addEventListener('click', () => {
+            finalizePlayersAndStart();
+        });
+
+        function finalizePlayersAndStart() {
+            totalFoodToSpawn = parseInt(document.getElementById('select-food-count').value, 10);
+            foodDropSpeed = parseFloat(document.getElementById('select-drop-speed').value);
+            const aiToAddCount = parseInt(document.getElementById('select-ai-count').value, 10);
+
+            const aiNames = ['🤖 智慧小安', '🤖 助人小傑', '🤖 快樂小熊'];
+
+            for (let i = 0; i < aiToAddCount; i++) {
+                const aiAvatar = getRandomAvatar();
+                players.push({
+                    id: 'ai_' + Date.now() + '_' + i,
+                    name: aiNames[i] || `🤖 AI助手${i+1}`,
+                    displayName: aiNames[i] || `🤖 AI助手${i+1}`,
+                    avatar: aiAvatar,
+                    conn: null,
+                    isAI: true,
+                    score: 0,
+                    x: 0.2 + (i * 0.3)
+                });
+            }
+
+            renderLobbyPlayers();
+            startGame();
+        }
+
+        function renderLobbyPlayers() {
+            const container = document.getElementById('player-list-lobby');
+            container.innerHTML = '';
+            document.getElementById('player-count-badge').innerText = `${players.length} 人`;
+
+            players.forEach(p => {
+                const item = document.createElement('div');
+                item.className = 'flex justify-between items-center bg-slate-800 p-2.5 rounded-xl border border-slate-700 text-sm';
+                item.innerHTML = `
+                    <div class="flex items-center gap-2 truncate">
+                        <span class="text-2xl">${p.avatar}</span>
+                        <span class="font-bold text-white truncate">${p.displayName || p.name}</span>
+                    </div>
+                    <span class="text-[10px] ${p.isAI ? 'bg-purple-900/80 text-purple-300' : 'bg-cyan-900/80 text-cyan-300'} px-2 py-0.5 rounded font-bold flex-shrink-0">
+                        ${p.isAI ? 'AI' : '連線'}
+                    </span>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        function startGame() {
+            document.getElementById('view-lobby').classList.add('hidden');
+            document.getElementById('main-header').classList.add('hidden');
+            document.getElementById('main-footer').classList.add('hidden');
+
+            document.getElementById('view-game').classList.remove('hidden');
+            document.getElementById('view-game').classList.add('grid');
+
+            canvas = document.getElementById('gameCanvas');
+            ctx = canvas.getContext('2d');
+            resizeCanvas();
+
+            players.forEach(p => { if (p.conn) p.conn.send({ type: 'GAME_START' }); });
+
+            spawnedFoodCount = 0;
+            activeFoods = [];
+            isGameRunning = true;
+
+            requestAnimationFrame(gameLoop);
+            spawnFoodInterval();
+        }
+
+        function resizeCanvas() {
+            if (!canvas) return;
+            canvas.width = canvas.parentElement.clientWidth;
+            canvas.height = canvas.parentElement.clientHeight;
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+
+        function spawnFoodInterval() {
+            if (!isGameRunning) return;
+
+            if (spawnedFoodCount < totalFoodToSpawn) {
+                // 70% 機率產生正確物資，30% 產生錯誤物資
+                const isGood = Math.random() < 0.7;
+                const pool = isGood ? validFoodPool : invalidFoodPool;
+                const foodItem = pool[Math.floor(Math.random() * pool.length)];
+
+                activeFoods.push({
+                    id: Date.now() + '_' + Math.random(),
+                    name: foodItem.name,
+                    icon: foodItem.icon,
+                    score: foodItem.score,
+                    x: 0.05 + Math.random() * 0.9,
+                    y: 0,
+                    speed: (0.003 + Math.random() * 0.002) * (foodDropSpeed / 3.5)
+                });
+
+                spawnedFoodCount++;
+                document.getElementById('remaining-food-badge').innerText = `🍎 剩餘物資：${totalFoodToSpawn - spawnedFoodCount}/${totalFoodToSpawn}`;
+
+                const nextInterval = 1000 + Math.random() * 1500;
+                setTimeout(spawnFoodInterval, nextInterval);
+            }
+        }
+
+        function gameLoop() {
+            if (!isGameRunning) return;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // 更新 AI 位置
+            players.filter(p => p.isAI).forEach(ai => {
+                // 找出距離最近的加分物資
+                const goodFoods = activeFoods.filter(f => f.score > 0);
+                if (goodFoods.length > 0) {
+                    const target = goodFoods[0];
+                    if (ai.x < target.x) ai.x += 0.003;
+                    if (ai.x > target.x) ai.x -= 0.003;
+                }
+            });
+
+            // 繪製與更新食物
+            for (let i = activeFoods.length - 1; i >= 0; i--) {
+                const food = activeFoods[i];
+                food.y += food.speed;
+
+                const drawX = food.x * canvas.width;
+                const drawY = food.y * canvas.height;
+
+                // 繪製食物圖示與名稱
+                ctx.font = '36px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(food.icon, drawX, drawY);
+
+                ctx.font = 'bold 14px "Noto Sans TC"';
+                ctx.fillStyle = food.score > 0 ? '#00ff66' : '#ff007f';
+                ctx.fillText(food.name, drawX, drawY + 20);
+
+                // 檢測是否碰撞玩家（角色置於畫布底部 10% 處）
+                const playerY = canvas.height * 0.88;
+                if (Math.abs(drawY - playerY) < 40) {
+                    players.forEach(p => {
+                        const playerX = p.x * canvas.width;
+                        if (Math.abs(drawX - playerX) < 40) {
+                            p.score += food.score;
+                            activeFoods.splice(i, 1);
+                        }
+                    });
+                } else if (food.y > 1.05) {
+                    activeFoods.splice(i, 1);
+                }
+            }
+
+            // 繪製玩家角色
+            players.forEach(p => {
+                const px = p.x * canvas.width;
+                const py = canvas.height * 0.88;
+
+                // 角色圖示
+                ctx.font = '52px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(p.avatar, px, py);
+
+                // 玩家名稱
+                ctx.font = 'bold 16px "Noto Sans TC"';
+                ctx.fillStyle = '#ffffff';
+                ctx.fillText(p.displayName || p.name, px, py + 25);
+
+                // 分數標籤
+                ctx.font = 'black 14px "Noto Sans TC"';
+                ctx.fillStyle = '#ffcc00';
+                ctx.fillText(`${p.score} 分`, px, py + 45);
+            });
+
+            renderPlayersDashboard();
+
+            // 檢查遊戲結束條件
+            if (spawnedFoodCount >= totalFoodToSpawn && activeFoods.length === 0) {
+                isGameRunning = false;
+                setTimeout(showFinalResult, 1500);
+            } else {
+                requestAnimationFrame(gameLoop);
+            }
+        }
+
+        function renderPlayersDashboard() {
+            const dashboard = document.getElementById('players-dashboard');
+            dashboard.innerHTML = '';
+
+            document.getElementById('game-total-players-badge').innerText = `${players.length} 人`;
+
+            const sortedPlayers = [...players].sort((a, b) => b.score - a.score);
+            
+            sortedPlayers.forEach((p, rank) => {
+                const card = document.createElement('div');
+                const displayName = p.displayName || p.name;
+
+                card.className = `p-2.5 md:p-3 rounded-2xl border-2 border-slate-800 bg-slate-900/70 flex items-center justify-between transition-all duration-200 flex-shrink-0`;
+                card.innerHTML = `
+                    <div class="flex items-center gap-2.5 truncate max-w-[65%]">
+                        <span class="font-black text-neon-blue text-lg md:text-xl min-w-[30px] text-center">#${rank + 1}</span>
+                        <span class="text-2xl flex-shrink-0">${p.avatar}</span>
+                        <span class="font-black text-white text-xl md:text-2xl truncate tracking-wide leading-tight">${displayName}</span>
+                    </div>
+                    <div class="flex items-center gap-2.5 flex-shrink-0">
+                        <span class="text-neon-yellow font-black text-xl md:text-2xl">${p.score} 分</span>
+                    </div>
+                `;
+                dashboard.appendChild(card);
+            });
+        }
+
+        function renderParticipantList(elementId, playerGroup, startIndex = 1) {
+            const container = document.getElementById(elementId);
+            container.innerHTML = '';
+            playerGroup.forEach((p, idx) => {
+                const rankNum = startIndex + idx;
+                const item = document.createElement('div');
+                item.className = 'flex flex-col p-2.5 bg-slate-900 rounded-xl border border-slate-800 text-sm gap-1';
+                item.innerHTML = `
+                    <div class="flex items-center gap-2 truncate w-full">
+                        <span class="font-bold text-slate-500 text-xs w-6 flex-shrink-0">#${rankNum}</span>
+                        <span class="text-xl">${p.avatar}</span>
+                        <span class="font-bold text-slate-300 truncate">${p.name}</span>
+                    </div>
+                    <div class="text-right w-full pl-8">
+                        <span class="font-black text-slate-200">${p.score} 分</span>
+                    </div>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        function showFinalResult() {
+            document.getElementById('view-game').classList.add('hidden');
+            document.getElementById('view-result').classList.remove('hidden');
+
+            const allSortedPlayers = [...players].sort((a, b) => b.score - a.score);
+
+            players.forEach(p => {
+                if (p.conn) {
+                    const rank = allSortedPlayers.findIndex(s => s.id === p.id) + 1;
+                    p.conn.send({
+                        type: 'FINAL_RESULT',
+                        rank: rank,
+                        score: p.score,
+                        totalPlayers: allSortedPlayers.length
+                    });
+                }
+            });
+
+            const halfIndex = Math.ceil(allSortedPlayers.length / 2);
+            const leftPlayers = allSortedPlayers.slice(0, halfIndex);
+            const rightPlayers = allSortedPlayers.slice(halfIndex);
+
+            document.getElementById('result-left-count').innerText = `${leftPlayers.length} 人`;
+            document.getElementById('result-right-count').innerText = `${rightPlayers.length} 人`;
+
+            renderParticipantList('result-left-list', leftPlayers, 1);
+            renderParticipantList('result-right-list', rightPlayers, halfIndex + 1);
+
+            const top3Container = document.getElementById('top3-container');
+            top3Container.innerHTML = '';
+
+            const top3 = allSortedPlayers.slice(0, 3);
+            const medals = ['🥇 第一名 冠軍', '🥈 第二名 亞軍', '🥉 第三名 季軍'];
+            const colors = ['border-amber-400 bg-amber-500/20 shadow-[0_0_30px_rgba(255,204,0,0.3)]', 'border-slate-300 bg-slate-400/20', 'border-amber-700 bg-amber-800/20'];
+
+            top3.forEach((p, idx) => {
+                const card = document.createElement('div');
+                
+                if (idx === 0) {
+                    card.className = `w-full max-w-md p-5 rounded-3xl border-4 ${colors[idx]} flex flex-col items-center justify-center my-1`;
+                    card.innerHTML = `
+                        <span class="text-sm font-black text-amber-300 bg-amber-950/80 px-4 py-1 rounded-full border border-amber-400 mb-1">👑 冠軍王座 👑</span>
+                        <div class="text-6xl my-1">${p.avatar}</div>
+                        <div class="text-3xl font-black text-white tracking-wide text-center">${p.name}</div>
+                        <div class="text-2xl font-black text-neon-yellow mt-2">${p.score} 分</div>
+                    `;
+                } else {
+                    card.className = `w-full max-w-md p-4 rounded-2xl border-2 ${colors[idx]} flex justify-between items-center px-6`;
+                    card.innerHTML = `
+                        <div class="flex items-center gap-4">
+                            <span class="text-4xl">${p.avatar}</span>
+                            <div class="text-left">
+                                <span class="text-xs font-bold text-slate-400">${medals[idx]}</span>
+                                <div class="text-2xl font-black text-white">${p.name}</div>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-xl font-black text-neon-yellow">${p.score} 分</div>
+                        </div>
+                    `;
+                }
+                top3Container.appendChild(card);
+            });
+
+            // 慶祝花火特效
+            confetti({
+                particleCount: 100,
+                spread: 70,
+                origin: { y: 0.6 }
+            });
+        }
+    </script>
+</body>
+</html>
