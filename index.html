@@ -130,7 +130,7 @@
                                 </select>
                             </div>
                             <div class="flex flex-col gap-1">
-                                <label for="select-drop-speed" class="text-xs text-amber-900 font-bold">掉落速度</label>
+                                <label for="select-drop-speed" class="text-xs text-amber-900 font-bold">初始掉落速度</label>
                                 <select id="select-drop-speed" class="bg-white text-slate-700 font-bold p-2 rounded-xl border border-amber-300 outline-none focus:border-emerald-500 cursor-pointer shadow-sm">
                                     <option value="1.5">超緩慢</option>
                                     <option value="2.5">緩慢</option>
@@ -160,7 +160,7 @@
             </div>
         </div>
 
-        <!-- 手機端 - 玩家控制器 (可選指尖觸控滑動或體感傾斜控制) -->
+        <!-- 手機端 - 玩家控制器 -->
         <div id="view-player-mobile" class="hidden fixed inset-0 z-50 bg-gradient-to-b from-sky-100 via-amber-50 to-emerald-100 p-4 flex-col justify-between overflow-hidden">
             <div id="mobile-top-bar" class="text-center space-y-1 flex-shrink-0 pt-2">
                 <span class="text-4xl">🌸</span>
@@ -203,18 +203,14 @@
 
                 <!-- 指尖觸控操控面板 (Touchpad) -->
                 <div id="touchpad-area" class="w-full h-52 bg-gradient-to-b from-slate-800 to-slate-900 rounded-2xl border-2 border-slate-700 relative overflow-hidden shadow-inner flex flex-col items-center justify-center touch-none select-none cursor-grab active:cursor-grabbing">
-                    <!-- 背景網格裝飾紋理 -->
                     <div class="absolute inset-0 bg-[radial-gradient(#334155_1px,transparent_1px)] [background-size:16px_16px] opacity-40 pointer-events-none"></div>
-                    <!-- 十字輔助線 -->
                     <div class="absolute w-full h-0.5 bg-slate-700/60 pointer-events-none"></div>
                     <div class="absolute h-full w-0.5 bg-slate-700/60 pointer-events-none"></div>
                     
-                    <!-- 指尖操控軌跡動態反饋視覺 -->
                     <div id="touch-pointer" class="w-12 h-12 bg-emerald-500/80 border-2 border-emerald-300 rounded-full transition-transform duration-75 absolute shadow-lg shadow-emerald-500/50 flex items-center justify-center pointer-events-none" style="top: 50%; left: 50%; transform: translate(-50%, -50%);">
                         <div class="w-3 h-3 bg-white rounded-full"></div>
                     </div>
 
-                    <!-- 引導提示文字 -->
                     <div id="touchpad-hint" class="text-slate-400 font-bold text-sm pointer-events-none z-10 flex flex-col items-center gap-1">
                         <i class="fa-solid fa-hand-pointer text-2xl text-emerald-400 animate-bounce"></i>
                         <span>指尖在此滑動操控上下左右</span>
@@ -265,11 +261,16 @@
             <!-- 右側：遊戲畫布 -->
             <div class="md:col-span-8 lg:col-span-9 bg-white/90 border-2 border-emerald-300 rounded-3xl p-2 shadow-2xl backdrop-blur-xl flex flex-col items-center justify-center relative overflow-hidden h-full">
                 <div id="game-hud" class="absolute top-4 left-6 right-6 flex justify-between items-center z-10 pointer-events-none">
-                    <span id="remaining-food-badge" class="text-2xl font-black text-amber-900 bg-amber-100/90 px-4 py-2 rounded-2xl border-2 border-amber-300 shadow">
-                        🍎 剩餘物資：0/0
-                    </span>
+                    <div class="flex items-center gap-2">
+                        <span id="remaining-food-badge" class="text-2xl font-black text-amber-900 bg-amber-100/90 px-4 py-2 rounded-2xl border-2 border-amber-300 shadow">
+                            🍎 剩餘物資：0/0
+                        </span>
+                        <span id="speed-multiplier-badge" class="text-2xl font-black text-rose-900 bg-rose-100/90 px-4 py-2 rounded-2xl border-2 border-rose-300 shadow">
+                            ⚡ 速度加成: x1
+                        </span>
+                    </div>
                     <span id="game-status-hint" class="text-emerald-800 font-bold text-xl bg-emerald-100/90 px-4 py-2 rounded-2xl border-2 border-emerald-300 shadow">
-                        接取正確物資+2分，不合適物資-1分！
+                        接取正確物資加倍得分，不可放入食物會觸發爆炸！
                     </span>
                 </div>
                 <canvas id="gameCanvas" class="w-full h-full rounded-2xl bg-gradient-to-b from-sky-100 via-amber-50 to-emerald-100 border border-emerald-200"></canvas>
@@ -321,18 +322,13 @@
     </footer>
 
     <script>
-        // 動物角色清單
         const animalAvatars = ['🐶', '🐱', '🐭', '🐹', '🐰', '🦊', '🐻', '🐼', '🐨', '🐯', '🦁', '🐮', '🐷', '🐸', '🐵', '🐔', '🐧', '🐦', '🦄'];
 
-        // 正確物資選單（+2分）
         const validFoodPool = [
-            // 1. 嬰兒與幼兒物資
             { name: "嬰兒奶粉", icon: "🍼", score: 2 },
             { name: "嬰幼兒尿布", icon: "👶", score: 2 },
             { name: "嬰幼兒濕紙巾", icon: "🧻", score: 2 },
             { name: "衛生紙", icon: "🧻", score: 2 },
-            
-            // 2. 一般膳糧物資
             { name: "保久乳", icon: "🥛", score: 2 },
             { name: "肉鬆", icon: "🥫", score: 2 },
             { name: "沖泡麥片", icon: "🥣", score: 2 },
@@ -341,22 +337,14 @@
             { name: "麵條", icon: "🍜", score: 2 },
             { name: "肉類調理包", icon: "🍲", score: 2 },
             { name: "白米", icon: "🍚", score: 2 },
-            
-            // 3. 素食膳糧物資
             { name: "素肉鬆", icon: "🌱", score: 2 },
             { name: "素食調理包", icon: "🥗", score: 2 },
-            
-            // 4 & 5. 長者/長青與易咬物資
             { name: "滴雞精", icon: "🐔", score: 2 },
             { name: "軟質粥品", icon: "🥣", score: 2 },
             { name: "易咬餅乾", icon: "🍪", score: 2 },
-            
-            // 6. 專案物資
             { name: "醫囑營養品", icon: "💊", score: 2 },
             { name: "尿布", icon: "👶", score: 2 },
             { name: "專案物資", icon: "📦", score: 2 },
-            
-            // 7. 年菜與特色食物箱
             { name: "養生珍菇雞湯", icon: "🍲", score: 2 },
             { name: "花生豬腳", icon: "🍖", score: 2 },
             { name: "佛跳牆", icon: "🍲", score: 2 },
@@ -365,7 +353,6 @@
             { name: "櫻花蝦米糕", icon: "🍚", score: 2 }
         ];
 
-        // 不可放入物資選單（-1分）
         const invalidFoodPool = [
             { name: "辣味豆干", icon: "🌶️", score: -1 },
             { name: "辣味罐頭", icon: "🌶️", score: -1 },
@@ -386,25 +373,24 @@
         let myPlayerId = null;
         let myAvatar = '🐱';
 
-        // 控制參數 (傾斜與靈敏度)
-        let zeroGamma = 0; // 左右零點基準角
-        let zeroBeta = 0;  // 前後零點基準角
+        let zeroGamma = 0;
+        let zeroBeta = 0;
         let isOrientationBound = false;
-        let sensitivityMultiplier = 1.0; // 靈敏度倍率
+        let sensitivityMultiplier = 1.0;
 
-        // 遊戲運行設定參數
+        // 遊戲動態加速度與倍率計算參數
         let totalFoodToSpawn = 40;
-        let foodDropSpeed = 3.5;
+        let baseFoodDropSpeed = 3.5;
+        let currentDropSpeed = 3.5;
+        let scoreMultiplier = 1; // 隨速度加倍
         let spawnedFoodCount = 0;
         let activeFoods = [];
-        let scorePopups = []; // 儲存躍動得分特效 (+2 / -1)
+        let scorePopups = [];
+        let explosions = []; // 爆炸特效陣列
         let gameLoopId = null;
         let isGameRunning = false;
 
-        // Canvas 設定
         let canvas, ctx;
-
-        // 音效 Web Audio API 系統
         let audioCtx = null;
 
         function getAudioContext() {
@@ -417,7 +403,6 @@
             return audioCtx;
         }
 
-        // 播放吃到正確食物 (+2) 的清脆躍動音效
         function playScoreSound() {
             try {
                 const ctx = getAudioContext();
@@ -427,8 +412,8 @@
                 const gain = ctx.createGain();
 
                 osc.type = 'sine';
-                osc.frequency.setValueAtTime(523.25, now); // C5
-                osc.frequency.exponentialRampToValueAtTime(1046.50, now + 0.15); // C6
+                osc.frequency.setValueAtTime(523.25, now);
+                osc.frequency.exponentialRampToValueAtTime(1046.50, now + 0.15);
 
                 gain.gain.setValueAtTime(0.3, now);
                 gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
@@ -443,13 +428,37 @@
             }
         }
 
-        // 播放煙火爆炸聲效
+        // 吃到不可放入食物時的爆炸音效
+        function playExplosionSound() {
+            try {
+                const ctx = getAudioContext();
+                const now = ctx.currentTime;
+
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(120, now);
+                osc.frequency.exponentialRampToValueAtTime(20, now + 0.35);
+
+                gain.gain.setValueAtTime(0.6, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
+
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+
+                osc.start(now);
+                osc.stop(now + 0.35);
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
         function playFireworkBoomSound() {
             try {
                 const ctx = getAudioContext();
                 const now = ctx.currentTime;
 
-                // 低頻發射/爆炸聲
                 const osc = ctx.createOscillator();
                 const gain = ctx.createGain();
 
@@ -474,7 +483,6 @@
             const urlParams = new URLSearchParams(window.location.search);
             const hostId = urlParams.get('host');
 
-            // BGM 音樂播放按鈕
             const bgm = document.getElementById('bgm');
             document.getElementById('btn-toggle-audio').addEventListener('click', () => {
                 getAudioContext();
@@ -519,7 +527,6 @@
                         } else if (data.type === 'TILT') {
                             const p = players.find(player => player.id === data.playerId);
                             if (p) {
-                                // 根據傳送的移動增量更新歸一化 2D 位置
                                 p.x = Math.max(0.05, Math.min(0.95, p.x + (data.deltaX || 0)));
                                 p.y = Math.max(0.20, Math.min(0.90, p.y + (data.deltaY || 0)));
                             }
@@ -567,13 +574,11 @@
                 zeroBeta = currentBeta;
             });
 
-            // 靈敏度選單監聽器
             document.getElementById('select-sensitivity').addEventListener('change', (e) => {
                 sensitivityMultiplier = parseFloat(e.target.value) || 1.0;
             });
         }
 
-        // 初始化指尖 Touchpad 操控邏輯
         function initTouchpadControls() {
             const touchpad = document.getElementById('touchpad-area');
             const pointer = document.getElementById('touch-pointer');
@@ -614,7 +619,6 @@
 
             const handleEnd = () => {
                 isTouching = false;
-                // 重置視覺指標至中心
                 if (pointer) {
                     pointer.style.left = '50%';
                     pointer.style.top = '50%';
@@ -630,7 +634,6 @@
                 pointer.style.top = `${y}px`;
             };
 
-            // Touch 事件
             touchpad.addEventListener('touchstart', (e) => {
                 if (e.touches.length > 0) handleStart(e.touches[0].clientX, e.touches[0].clientY);
             }, { passive: true });
@@ -641,7 +644,6 @@
 
             touchpad.addEventListener('touchend', handleEnd, { passive: true });
 
-            // Mouse 事件 (支援電腦測試)
             touchpad.addEventListener('mousedown', (e) => handleStart(e.clientX, e.clientY));
             window.addEventListener('mousemove', (e) => handleMove(e.clientX, e.clientY));
             window.addEventListener('mouseup', handleEnd);
@@ -654,8 +656,8 @@
             if (isOrientationBound) return;
 
             const handleOrientation = (e) => {
-                let gamma = e.gamma || 0; // 左右傾斜角 -90 ~ 90
-                let beta = e.beta || 0;   // 前後傾斜角 -180 ~ 180
+                let gamma = e.gamma || 0;
+                let beta = e.beta || 0;
 
                 currentGamma = gamma;
                 currentBeta = beta;
@@ -668,7 +670,6 @@
                     angleText.innerText = `${Math.round(relativeGamma)}°, ${Math.round(relativeBeta)}°`;
                 }
 
-                // 傳送 X 與 Y 上下左右移動偏移增量至大螢幕 (加入靈敏度倍率調整)
                 if (hostConn && hostConn.open && (Math.abs(relativeGamma) > 2 || Math.abs(relativeBeta) > 2)) {
                     const deltaX = (relativeGamma / 30) * 0.025 * sensitivityMultiplier;
                     const deltaY = (relativeBeta / 30) * 0.025 * sensitivityMultiplier;
@@ -681,7 +682,6 @@
                 }
             };
 
-            // iOS 13+ 權限請求
             if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
                 DeviceOrientationEvent.requestPermission().then(response => {
                     if (response === 'granted') {
@@ -699,7 +699,6 @@
             const name = document.getElementById('mobile-name-input').value.trim();
             if (!name) return alert('請輸入暱稱！');
 
-            // 觸發 iOS 裝置的陀螺儀權限請求（必須於用戶點擊事件觸發）
             if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
                 DeviceOrientationEvent.requestPermission().catch(() => {});
             }
@@ -760,8 +759,8 @@
                 conn: conn,
                 isAI: false,
                 score: 0,
-                x: 0.1 + Math.random() * 0.8, // 歸一化 X 座標 (0.05 - 0.95)
-                y: 0.88                       // 歸一化 Y 座標 (0.20 - 0.90)
+                x: 0.1 + Math.random() * 0.8,
+                y: 0.88
             };
             players.push(p);
 
@@ -782,7 +781,10 @@
 
         function finalizePlayersAndStart() {
             totalFoodToSpawn = parseInt(document.getElementById('select-food-count').value, 10);
-            foodDropSpeed = parseFloat(document.getElementById('select-drop-speed').value);
+            baseFoodDropSpeed = parseFloat(document.getElementById('select-drop-speed').value);
+            currentDropSpeed = baseFoodDropSpeed;
+            scoreMultiplier = 1;
+
             const aiToAddCount = parseInt(document.getElementById('select-ai-count').value, 10);
 
             const aiNames = ['🤖 智慧小安', '🤖 助人小傑'];
@@ -804,7 +806,7 @@
 
             renderLobbyPlayers();
             
-            // 啟動背景音樂心花開
+            // 開始播放台語歌曲「心花開」
             const bgm = document.getElementById('bgm');
             getAudioContext();
             if (bgm) {
@@ -852,6 +854,7 @@
             spawnedFoodCount = 0;
             activeFoods = [];
             scorePopups = [];
+            explosions = [];
             isGameRunning = true;
 
             requestAnimationFrame(gameLoop);
@@ -870,7 +873,20 @@
             if (!isGameRunning) return;
 
             if (spawnedFoodCount < totalFoodToSpawn) {
-                // 70% 機率產生正確物資，30% 產生錯誤物資
+                // 隨機動態加快掉落速度
+                if (Math.random() < 0.35) {
+                    currentDropSpeed += 0.2 + Math.random() * 0.3;
+                    
+                    // 每加快 20% 分數加倍計算
+                    const speedRatio = currentDropSpeed / baseFoodDropSpeed;
+                    const increaseRatio = speedRatio - 1.0;
+                    if (increaseRatio >= 0.2) {
+                        const multiplierStep = Math.floor(increaseRatio / 0.2);
+                        scoreMultiplier = Math.pow(2, multiplierStep);
+                    }
+                    document.getElementById('speed-multiplier-badge').innerText = `⚡ 速度加成: x${scoreMultiplier}`;
+                }
+
                 const isGood = Math.random() < 0.7;
                 const pool = isGood ? validFoodPool : invalidFoodPool;
                 const foodItem = pool[Math.floor(Math.random() * pool.length)];
@@ -882,14 +898,32 @@
                     score: foodItem.score,
                     x: 0.05 + Math.random() * 0.9,
                     y: 0,
-                    speed: (0.003 + Math.random() * 0.002) * (foodDropSpeed / 3.5)
+                    speed: (0.003 + Math.random() * 0.002) * (currentDropSpeed / 3.5)
                 });
 
                 spawnedFoodCount++;
                 document.getElementById('remaining-food-badge').innerText = `🍎 剩餘物資：${totalFoodToSpawn - spawnedFoodCount}/${totalFoodToSpawn}`;
 
-                const nextInterval = 1000 + Math.random() * 1500;
+                const nextInterval = Math.max(300, (1000 + Math.random() * 1200) * (baseFoodDropSpeed / currentDropSpeed));
                 setTimeout(spawnFoodInterval, nextInterval);
+            }
+        }
+
+        // 建立爆炸粒子效果
+        function createExplosion(x, y) {
+            const particleCount = 20;
+            for (let i = 0; i < particleCount; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = 2 + Math.random() * 6;
+                explosions.push({
+                    x: x,
+                    y: y,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed,
+                    radius: 3 + Math.random() * 5,
+                    color: ['#ef4444', '#f97316', '#eab308', '#78350f'][Math.floor(Math.random() * 4)],
+                    alpha: 1.0
+                });
             }
         }
 
@@ -898,7 +932,7 @@
 
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // 更新 AI 位置 (上下左右全方向追踪)
+            // AI 自動移動
             players.filter(p => p.isAI).forEach(ai => {
                 const goodFoods = activeFoods.filter(f => f.score > 0);
                 if (goodFoods.length > 0) {
@@ -910,7 +944,7 @@
                 }
             });
 
-            // 繪製與更新食物
+            // 繪製與更新掉落食物
             for (let i = activeFoods.length - 1; i >= 0; i--) {
                 const food = activeFoods[i];
                 food.y += food.speed;
@@ -918,7 +952,6 @@
                 const drawX = food.x * canvas.width;
                 const drawY = food.y * canvas.height;
 
-                // 繪製食物圖示與名稱
                 ctx.font = '43px sans-serif';
                 ctx.textAlign = 'center';
                 ctx.fillText(food.icon, drawX, drawY);
@@ -927,7 +960,7 @@
                 ctx.fillStyle = food.score > 0 ? '#15803d' : '#e11d48';
                 ctx.fillText(food.name, drawX, drawY + 24);
 
-                // 檢測是否碰撞玩家 (全方向 2D 空間距離判定)
+                // 碰撞檢測
                 players.forEach(p => {
                     const playerX = p.x * canvas.width;
                     const playerY = p.y * canvas.height;
@@ -935,13 +968,14 @@
                     const distY = Math.abs(drawY - playerY);
 
                     if (distX < 45 && distY < 45) {
-                        p.score += food.score;
-
                         if (food.score > 0) {
-                            // 正確食物 +2 音效與躍動文字效果
+                            // 正確食物：計算速度加成後的倍率得分
+                            const addScore = food.score * scoreMultiplier;
+                            p.score += addScore;
+
                             playScoreSound();
                             scorePopups.push({
-                                text: '+2',
+                                text: `+${addScore}`,
                                 x: drawX,
                                 y: drawY - 10,
                                 alpha: 1.0,
@@ -949,13 +983,18 @@
                                 color: '#f59e0b'
                             });
                         } else {
+                            // 吃到不能放進去的食物：觸發爆炸特效與音效
+                            p.score += food.score; // 扣分
+                            playExplosionSound();
+                            createExplosion(playerX, playerY);
+
                             scorePopups.push({
-                                text: '-1',
+                                text: '💥 爆炸! -1',
                                 x: drawX,
                                 y: drawY - 10,
                                 alpha: 1.0,
-                                scale: 1.2,
-                                color: '#f43f5e'
+                                scale: 1.4,
+                                color: '#ef4444'
                             });
                         }
 
@@ -968,7 +1007,27 @@
                 }
             }
 
-            // 繪製 +2 躍動得分飄浮特效
+            // 繪製與更新爆炸特效
+            for (let i = explosions.length - 1; i >= 0; i--) {
+                const exp = explosions[i];
+                exp.x += exp.vx;
+                exp.y += exp.vy;
+                exp.alpha -= 0.03;
+
+                ctx.save();
+                ctx.globalAlpha = Math.max(0, exp.alpha);
+                ctx.beginPath();
+                ctx.arc(exp.x, exp.y, exp.radius, 0, Math.PI * 2);
+                ctx.fillStyle = exp.color;
+                ctx.fill();
+                ctx.restore();
+
+                if (exp.alpha <= 0) {
+                    explosions.splice(i, 1);
+                }
+            }
+
+            // 繪製飄浮得分/爆炸文字
             for (let i = scorePopups.length - 1; i >= 0; i--) {
                 const pop = scorePopups[i];
                 pop.y -= 1.5;
@@ -995,17 +1054,14 @@
                 const px = p.x * canvas.width;
                 const py = p.y * canvas.height;
 
-                // 角色圖示
                 ctx.font = '52px sans-serif';
                 ctx.textAlign = 'center';
                 ctx.fillText(p.avatar, px, py);
 
-                // 玩家名稱
                 ctx.font = 'bold 16px "Noto Sans TC"';
                 ctx.fillStyle = '#1e293b';
                 ctx.fillText(p.displayName || p.name, px, py + 25);
 
-                // 分數標籤
                 ctx.font = '900 14px "Noto Sans TC"';
                 ctx.fillStyle = '#d97706';
                 ctx.fillText(`${p.score} 分`, px, py + 45);
@@ -1013,7 +1069,6 @@
 
             renderPlayersDashboard();
 
-            // 檢查遊戲結束條件
             if (spawnedFoodCount >= totalFoodToSpawn && activeFoods.length === 0) {
                 isGameRunning = false;
                 setTimeout(showFinalResult, 1500);
@@ -1134,13 +1189,11 @@
                 top3Container.appendChild(card);
             });
 
-            // 慶祝 8 秒滿屏煙火 + 音效
             launch8SecFireworks();
         }
 
-        // 8 秒持續滿屏煙火與聲效
         function launch8SecFireworks() {
-            const duration = 8 * 1000; // 8 秒
+            const duration = 8 * 1000;
             const animationEnd = Date.now() + duration;
 
             const interval = setInterval(() => {
@@ -1150,10 +1203,8 @@
                     return clearInterval(interval);
                 }
 
-                // 播放煙火爆炸聲
                 playFireworkBoomSound();
 
-                // 滿屏隨機位置雙邊發射煙火
                 confetti({
                     particleCount: 40,
                     startVelocity: 30,
