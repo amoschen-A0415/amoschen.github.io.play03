@@ -152,11 +152,11 @@
             </div>
         </div>
 
-        <!-- 手機端 - 玩家控制器 (前後左右傾斜手機控制移動) -->
+        <!-- 手機端 - 玩家控制器 (可選指尖觸控滑動或體感傾斜控制) -->
         <div id="view-player-mobile" class="hidden fixed inset-0 z-50 bg-gradient-to-b from-sky-100 via-amber-50 to-emerald-100 p-4 flex-col justify-between overflow-hidden">
             <div id="mobile-top-bar" class="text-center space-y-1 flex-shrink-0 pt-2">
                 <span class="text-4xl">🌸</span>
-                <h2 class="text-xl font-black text-emerald-800">食物接接樂體感控制器</h2>
+                <h2 class="text-xl font-black text-emerald-800">食物接接樂體感/觸控控制器</h2>
                 <p id="player-mobile-name" class="text-amber-700 font-bold text-base">正在連線大螢幕...</p>
                 <div id="mobile-avatar-display" class="hidden text-6xl py-2 animate-bounce">
                     🐱
@@ -171,29 +171,53 @@
                 </button>
             </div>
 
-            <!-- 控制器 - 手機感應傾斜控制 (全方向 2D 指示器) -->
-            <div id="mobile-controls" class="hidden flex-col items-center justify-center gap-3 w-full my-auto bg-white/80 border-2 border-emerald-300 rounded-3xl p-5 shadow-xl backdrop-blur-md">
-                <div class="text-emerald-900 font-black text-lg text-center flex items-center gap-2">
-                    <i class="fa-solid fa-mobile-screen-button animate-pulse text-xl"></i>
-                    前後左右傾斜手機控制移動
-                </div>
+            <!-- 控制器 - 指尖觸控操控區域 & 靈敏度調整功能 -->
+            <div id="mobile-controls" class="hidden flex-col items-center justify-center gap-3 w-full my-auto bg-white/80 border-2 border-emerald-300 rounded-3xl p-4 shadow-xl backdrop-blur-md">
                 
-                <!-- 全方向 2D 指示面板 -->
-                <div class="w-40 h-40 bg-slate-100 rounded-2xl border-2 border-slate-300 relative my-1 overflow-hidden shadow-inner flex items-center justify-center">
+                <!-- 頂部：靈敏度調節與重置按鈕區塊 -->
+                <div class="w-full flex items-center justify-between px-2 gap-2">
+                    <div class="flex items-center gap-1.5 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-xl shadow-sm">
+                        <i class="fa-solid fa-gauge-high text-amber-600 text-xs"></i>
+                        <label for="select-sensitivity" class="text-xs font-bold text-amber-900 whitespace-nowrap">靈敏度：</label>
+                        <select id="select-sensitivity" class="bg-white text-slate-800 font-black text-xs p-1 rounded-lg border border-amber-300 outline-none cursor-pointer">
+                            <option value="0.5">極低 (0.5x)</option>
+                            <option value="0.8">低 (0.8x)</option>
+                            <option value="1.0" selected>標準 (1.0x)</option>
+                            <option value="1.5">高 (1.5x)</option>
+                            <option value="2.0">極高 (2.0x)</option>
+                        </select>
+                    </div>
+
+                    <button id="btn-recalibrate" class="px-3 py-1.5 bg-amber-400 active:bg-amber-500 text-amber-950 font-bold rounded-xl shadow border border-white text-xs flex items-center gap-1 whitespace-nowrap">
+                        <i class="fa-solid fa-rotate-right"></i> 重置原點
+                    </button>
+                </div>
+
+                <!-- 指尖觸控操控面板 (Touchpad) -->
+                <div id="touchpad-area" class="w-full h-52 bg-gradient-to-b from-slate-800 to-slate-900 rounded-2xl border-2 border-slate-700 relative overflow-hidden shadow-inner flex flex-col items-center justify-center touch-none select-none cursor-grab active:cursor-grabbing">
+                    <!-- 背景網格裝飾紋理 -->
+                    <div class="absolute inset-0 bg-[radial-gradient(#334155_1px,transparent_1px)] [background-size:16px_16px] opacity-40 pointer-events-none"></div>
                     <!-- 十字輔助線 -->
-                    <div class="absolute w-full h-0.5 bg-slate-200"></div>
-                    <div class="absolute h-full w-0.5 bg-slate-200"></div>
-                    <!-- 動態搖桿原點標記 -->
-                    <div id="tilt-indicator-2d" class="w-7 h-7 bg-emerald-500 rounded-full transition-all duration-75 absolute shadow-md border-2 border-white" style="top: 50%; left: 50%; transform: translate(-50%, -50%);"></div>
+                    <div class="absolute w-full h-0.5 bg-slate-700/60 pointer-events-none"></div>
+                    <div class="absolute h-full w-0.5 bg-slate-700/60 pointer-events-none"></div>
+                    
+                    <!-- 指尖操控軌跡動態反饋視覺 -->
+                    <div id="touch-pointer" class="w-12 h-12 bg-emerald-500/80 border-2 border-emerald-300 rounded-full transition-transform duration-75 absolute shadow-lg shadow-emerald-500/50 flex items-center justify-center pointer-events-none" style="top: 50%; left: 50%; transform: translate(-50%, -50%);">
+                        <div class="w-3 h-3 bg-white rounded-full"></div>
+                    </div>
+
+                    <!-- 引導提示文字 -->
+                    <div id="touchpad-hint" class="text-slate-400 font-bold text-sm pointer-events-none z-10 flex flex-col items-center gap-1">
+                        <i class="fa-solid fa-hand-pointer text-2xl text-emerald-400 animate-bounce"></i>
+                        <span>指尖在此滑動操控上下左右</span>
+                    </div>
                 </div>
 
-                <div class="text-slate-600 font-bold text-xs text-center">
-                    傾斜角度 (X, Y)：<span id="tilt-angle-text" class="text-emerald-700 font-black text-base">0°, 0°</span>
+                <div class="text-slate-600 font-bold text-xs text-center flex items-center justify-between w-full px-2">
+                    <span>傾斜角度: <strong id="tilt-angle-text" class="text-emerald-700 font-black">0°, 0°</strong></span>
+                    <span class="text-slate-400">|</span>
+                    <span>觸控/傾斜雙模式支援</span>
                 </div>
-
-                <button id="btn-recalibrate" class="mt-1 px-5 py-2 bg-amber-400 active:bg-amber-500 text-amber-950 font-bold rounded-xl shadow border border-white text-xs">
-                    🔄 重置中心零點
-                </button>
             </div>
 
             <!-- 手機端 - 最終結算 -->
@@ -354,10 +378,11 @@
         let myPlayerId = null;
         let myAvatar = '🐱';
 
-        // 體感傾斜控制變數 (前後左右)
+        // 控制參數 (傾斜與靈敏度)
         let zeroGamma = 0; // 左右零點基準角
         let zeroBeta = 0;  // 前後零點基準角
         let isOrientationBound = false;
+        let sensitivityMultiplier = 1.0; // 靈敏度倍率
 
         // 遊戲運行設定參數
         let totalFoodToSpawn = 40;
@@ -408,7 +433,7 @@
                         } else if (data.type === 'TILT') {
                             const p = players.find(player => player.id === data.playerId);
                             if (p) {
-                                // 根據傾斜量更新歸一化 2D 位置
+                                // 根據傳送的移動增量更新歸一化 2D 位置
                                 p.x = Math.max(0.05, Math.min(0.95, p.x + (data.deltaX || 0)));
                                 p.y = Math.max(0.20, Math.min(0.90, p.y + (data.deltaY || 0)));
                             }
@@ -440,10 +465,11 @@
                         avatarEl.innerText = myAvatar;
                         avatarEl.classList.remove('hidden');
                     } else if (data.type === 'GAME_START') {
-                        document.getElementById('mobile-status-text').innerText = '🎮 遊戲開始，前後左右傾斜手機接取物資！';
+                        document.getElementById('mobile-status-text').innerText = '🎮 遊戲開始！使用指尖滑動或傾斜手機操控移動！';
                         document.getElementById('mobile-controls').classList.remove('hidden');
                         document.getElementById('mobile-controls').classList.add('flex');
                         startOrientationListener();
+                        initTouchpadControls();
                     } else if (data.type === 'FINAL_RESULT') {
                         showMobileFinalResult(data.rank, data.score, data.totalPlayers);
                     }
@@ -454,6 +480,85 @@
                 zeroGamma = currentGamma;
                 zeroBeta = currentBeta;
             });
+
+            // 靈敏度選單監聽器
+            document.getElementById('select-sensitivity').addEventListener('change', (e) => {
+                sensitivityMultiplier = parseFloat(e.target.value) || 1.0;
+            });
+        }
+
+        // 初始化指尖 Touchpad 操控邏輯
+        function initTouchpadControls() {
+            const touchpad = document.getElementById('touchpad-area');
+            const pointer = document.getElementById('touch-pointer');
+            const hint = document.getElementById('touchpad-hint');
+
+            let isTouching = false;
+            let lastTouchX = 0;
+            let lastTouchY = 0;
+
+            const handleStart = (clientX, clientY) => {
+                isTouching = true;
+                lastTouchX = clientX;
+                lastTouchY = clientY;
+                if (hint) hint.classList.add('hidden');
+                updatePointerPosition(clientX, clientY);
+            };
+
+            const handleMove = (clientX, clientY) => {
+                if (!isTouching) return;
+
+                const deltaX = (clientX - lastTouchX) * 0.002 * sensitivityMultiplier;
+                const deltaY = (clientY - lastTouchY) * 0.002 * sensitivityMultiplier;
+
+                lastTouchX = clientX;
+                lastTouchY = clientY;
+
+                updatePointerPosition(clientX, clientY);
+
+                if (hostConn && hostConn.open && (Math.abs(deltaX) > 0.0001 || Math.abs(deltaY) > 0.0001)) {
+                    hostConn.send({
+                        type: 'TILT',
+                        playerId: myPlayerId,
+                        deltaX: deltaX,
+                        deltaY: deltaY
+                    });
+                }
+            };
+
+            const handleEnd = () => {
+                isTouching = false;
+                // 重置視覺指標至中心
+                if (pointer) {
+                    pointer.style.left = '50%';
+                    pointer.style.top = '50%';
+                }
+            };
+
+            const updatePointerPosition = (clientX, clientY) => {
+                if (!touchpad || !pointer) return;
+                const rect = touchpad.getBoundingClientRect();
+                const x = Math.max(0, Math.min(rect.width, clientX - rect.left));
+                const y = Math.max(0, Math.min(rect.height, clientY - rect.top));
+                pointer.style.left = `${x}px`;
+                pointer.style.top = `${y}px`;
+            };
+
+            // Touch 事件
+            touchpad.addEventListener('touchstart', (e) => {
+                if (e.touches.length > 0) handleStart(e.touches[0].clientX, e.touches[0].clientY);
+            }, { passive: true });
+
+            touchpad.addEventListener('touchmove', (e) => {
+                if (e.touches.length > 0) handleMove(e.touches[0].clientX, e.touches[0].clientY);
+            }, { passive: true });
+
+            touchpad.addEventListener('touchend', handleEnd, { passive: true });
+
+            // Mouse 事件 (支援電腦測試)
+            touchpad.addEventListener('mousedown', (e) => handleStart(e.clientX, e.clientY));
+            window.addEventListener('mousemove', (e) => handleMove(e.clientX, e.clientY));
+            window.addEventListener('mouseup', handleEnd);
         }
 
         let currentGamma = 0;
@@ -472,21 +577,15 @@
                 const relativeGamma = Math.max(-30, Math.min(30, gamma - zeroGamma));
                 const relativeBeta = Math.max(-30, Math.min(30, beta - zeroBeta));
                 
-                // UI 顯示 2D 搖桿回饋
-                const indicator2d = document.getElementById('tilt-indicator-2d');
                 const angleText = document.getElementById('tilt-angle-text');
-                if (indicator2d && angleText) {
-                    const percentX = 50 + (relativeGamma / 30) * 40;
-                    const percentY = 50 + (relativeBeta / 30) * 40;
-                    indicator2d.style.left = `${percentX}%`;
-                    indicator2d.style.top = `${percentY}%`;
+                if (angleText) {
                     angleText.innerText = `${Math.round(relativeGamma)}°, ${Math.round(relativeBeta)}°`;
                 }
 
-                // 傳送 X 與 Y 上下左右移動偏移增量至大螢幕
+                // 傳送 X 與 Y 上下左右移動偏移增量至大螢幕 (加入靈敏度倍率調整)
                 if (hostConn && hostConn.open && (Math.abs(relativeGamma) > 2 || Math.abs(relativeBeta) > 2)) {
-                    const deltaX = (relativeGamma / 30) * 0.025;
-                    const deltaY = (relativeBeta / 30) * 0.025;
+                    const deltaX = (relativeGamma / 30) * 0.025 * sensitivityMultiplier;
+                    const deltaY = (relativeBeta / 30) * 0.025 * sensitivityMultiplier;
                     hostConn.send({ 
                         type: 'TILT', 
                         playerId: myPlayerId, 
@@ -724,7 +823,7 @@
                 const drawX = food.x * canvas.width;
                 const drawY = food.y * canvas.height;
 
-                // 繪製食物圖示與名稱 (圖案已放大約 20%，由 36px 調整為 43px)
+                // 繪製食物圖示與名稱
                 ctx.font = '43px sans-serif';
                 ctx.textAlign = 'center';
                 ctx.fillText(food.icon, drawX, drawY);
