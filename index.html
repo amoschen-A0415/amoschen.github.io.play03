@@ -434,7 +434,7 @@
             }
         }
 
-        // 播放瑪利歐勝利音樂（問答遊戲頒獎音效）
+        // 播放瑪利歐勝利音樂（完全與「安得烈食物銀行問答遊戲」一樣的頒獎音效）
         function playMarioVictoryFanfare() {
             getAudioContext();
             stopBgm();
@@ -494,45 +494,8 @@
             }
         }
 
-        // 播放吃到不可放入食物時的爆炸音效
+        // 播放吃到錯誤物資的爆破音效
         function playExplosionSound() {
-            try {
-                const ctx = getAudioContext();
-                const now = ctx.currentTime;
-
-                // 雜訊緩衝區產生低沈爆破音
-                const bufferSize = ctx.sampleRate * 0.3; 
-                const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-                const data = buffer.getChannelData(0);
-                for (let i = 0; i < bufferSize; i++) {
-                    data[i] = Math.random() * 2 - 1;
-                }
-
-                const noise = ctx.createBufferSource();
-                noise.buffer = buffer;
-
-                const filter = ctx.createBiquadFilter();
-                filter.type = 'lowpass';
-                filter.frequency.setValueAtTime(800, now);
-                filter.frequency.exponentialRampToValueAtTime(50, now + 0.3);
-
-                const gain = ctx.createGain();
-                gain.gain.setValueAtTime(0.8, now);
-                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
-
-                noise.connect(filter);
-                filter.connect(gain);
-                gain.connect(ctx.destination);
-
-                noise.start(now);
-                noise.stop(now + 0.3);
-            } catch (e) {
-                console.error(e);
-            }
-        }
-
-        // 播放煙火爆炸聲效
-        function playFireworkBoomSound() {
             try {
                 const ctx = getAudioContext();
                 const now = ctx.currentTime;
@@ -540,43 +503,29 @@
                 const osc = ctx.createOscillator();
                 const gain = ctx.createGain();
 
-                osc.type = 'triangle';
-                osc.frequency.setValueAtTime(160, now);
-                osc.frequency.exponentialRampToValueAtTime(40, now + 0.4);
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(150, now);
+                osc.frequency.exponentialRampToValueAtTime(30, now + 0.3);
 
-                gain.gain.setValueAtTime(0.5, now);
-                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+                gain.gain.setValueAtTime(0.4, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
 
                 osc.connect(gain);
                 gain.connect(ctx.destination);
 
                 osc.start(now);
-                osc.stop(now + 0.4);
+                osc.stop(now + 0.3);
             } catch (e) {
                 console.error(e);
             }
         }
 
-        // 產生爆炸粒子特效
-        function createExplosion(x, y) {
-            const colors = ['#f43f5e', '#f97316', '#eab308', '#ef4444', '#ffffff'];
-            for (let i = 0; i < 25; i++) {
-                const angle = Math.random() * Math.PI * 2;
-                const speed = 2 + Math.random() * 6;
-                explosionParticles.push({
-                    x: x,
-                    y: y,
-                    vx: Math.cos(angle) * speed,
-                    vy: Math.sin(angle) * speed,
-                    size: 3 + Math.random() * 5,
-                    color: colors[Math.floor(Math.random() * colors.length)],
-                    alpha: 1.0,
-                    decay: 0.03 + Math.random() * 0.02
-                });
-            }
-        }
-
         window.onload = () => {
+            canvas = document.getElementById('gameCanvas');
+            ctx = canvas.getContext('2d');
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+
             const urlParams = new URLSearchParams(window.location.search);
             const hostId = urlParams.get('host');
 
@@ -591,6 +540,13 @@
                 initHostPeer();
             }
         };
+
+        function resizeCanvas() {
+            if (canvas && canvas.parentElement) {
+                canvas.width = canvas.parentElement.clientWidth;
+                canvas.height = canvas.parentElement.clientHeight;
+            }
+        }
 
         function initHostPeer() {
             peer = new Peer();
@@ -610,12 +566,13 @@
                 conn.on('open', () => {
                     conn.on('data', (data) => {
                         if (data.type === 'JOIN') {
-                            addPlayer(data.name, conn, data.playerId);
-                        } else if (data.type === 'TILT') {
+                            addPlayer(data.name, conn, data.playerId, data.avatar);
+                        } else if (data.type === 'MOVE') {
                             const p = players.find(player => player.id === data.playerId);
-                            if (p) {
-                                p.x = Math.max(0.05, Math.min(0.95, p.x + (data.deltaX || 0)));
-                                p.y = Math.max(0.20, Math.min(0.90, p.y + (data.deltaY || 0)));
+                            if (p && isGameRunning) {
+                                // 根據手機傳來的偏轉量更新位置 (限制於 0~1 之間)
+                                p.targetNormX = Math.max(0.05, Math.min(0.95, p.normX + data.dx));
+                                p.targetNormY = Math.max(0.1, Math.min(0.9, p.normY + data.dy));
                             }
                         }
                     });
@@ -639,164 +596,514 @@
                 });
 
                 hostConn.on('data', (data) => {
-                    if (data.type === 'ASSIGN_AVATAR') {
-                        myAvatar = data.avatar;
-                        const avatarEl = document.getElementById('mobile-avatar-display');
-                        avatarEl.innerText = myAvatar;
-                        avatarEl.classList.remove('hidden');
-                    } else if (data.type === 'GAME_START') {
-                        document.getElementById('mobile-status-text').innerText = '🎮 遊戲開始！使用指尖滑動或傾斜手機操控移動！';
-                        document.getElementById('mobile-controls').classList.remove('hidden');
-                        document.getElementById('mobile-controls').classList.add('flex');
-                        startOrientationListener();
-                        initTouchpadControls();
+                    if (data.type === 'GAME_START') {
+                        document.getElementById('mobile-status-text').innerText = '🎮 賽事進行中，請傾斜手機或在面板滑動！';
                     } else if (data.type === 'FINAL_RESULT') {
                         showMobileFinalResult(data.rank, data.score, data.totalPlayers);
                     }
                 });
             });
 
+            // 隨機選一個動物角色
+            myAvatar = animalAvatars[Math.floor(Math.random() * animalAvatars.length)];
+
             document.getElementById('btn-recalibrate').addEventListener('click', () => {
                 zeroGamma = currentGamma;
                 zeroBeta = currentBeta;
+                document.getElementById('mobile-status-text').innerText = '🎯 已重新設為原點中心！';
             });
 
             document.getElementById('select-sensitivity').addEventListener('change', (e) => {
-                sensitivityMultiplier = parseFloat(e.target.value) || 1.0;
+                sensitivityMultiplier = parseFloat(e.target.value);
             });
+
+            setupTouchpadEvents();
         }
 
-        function initTouchpadControls() {
+        let currentGamma = 0, currentBeta = 0;
+
+        function setupDeviceOrientation() {
+            if (window.DeviceOrientationEvent) {
+                if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+                    DeviceOrientationEvent.requestPermission()
+                        .then(permissionState => {
+                            if (permissionState === 'granted') {
+                                window.addEventListener('deviceorientation', handleOrientation);
+                            }
+                        })
+                        .catch(console.error);
+                } else {
+                    window.addEventListener('deviceorientation', handleOrientation);
+                }
+            }
+        }
+
+        function handleOrientation(event) {
+            currentGamma = event.gamma || 0; // 左右傾斜 (-90 ~ 90)
+            currentBeta = event.beta || 0;   // 前後傾斜 (-180 ~ 180)
+
+            if (!isOrientationBound) {
+                zeroGamma = currentGamma;
+                zeroBeta = currentBeta;
+                isOrientationBound = true;
+            }
+
+            const diffGamma = currentGamma - zeroGamma;
+            const diffBeta = currentBeta - zeroBeta;
+
+            document.getElementById('tilt-angle-text').innerText = `${Math.round(diffGamma)}°, ${Math.round(diffBeta)}°`;
+
+            // 傳送傾斜移動量給大螢幕
+            if (hostConn && hostConn.open && (Math.abs(diffGamma) > 1.5 || Math.abs(diffBeta) > 1.5)) {
+                const dx = (diffGamma / 45) * 0.04 * sensitivityMultiplier;
+                const dy = (diffBeta / 45) * 0.04 * sensitivityMultiplier;
+                hostConn.send({
+                    type: 'MOVE',
+                    playerId: myPlayerId,
+                    dx: dx,
+                    dy: dy
+                });
+            }
+        }
+
+        function setupTouchpadEvents() {
             const touchpad = document.getElementById('touchpad-area');
             const pointer = document.getElementById('touch-pointer');
-            const hint = document.getElementById('touchpad-hint');
-
             let isTouching = false;
-            let lastTouchX = 0;
-            let lastTouchY = 0;
+            let startX = 0, startY = 0;
 
-            const handleStart = (clientX, clientY) => {
+            function handleStart(e) {
                 isTouching = true;
-                lastTouchX = clientX;
-                lastTouchY = clientY;
-                if (hint) hint.classList.add('hidden');
-                updatePointerPosition(clientX, clientY);
-            };
+                const touch = e.touches ? e.touches[0] : e;
+                const rect = touchpad.getBoundingClientRect();
+                startX = touch.clientX - rect.left;
+                startY = touch.clientY - rect.top;
+                updatePointerPosition(startX, startY, rect);
+            }
 
-            const handleMove = (clientX, clientY) => {
+            function handleMove(e) {
                 if (!isTouching) return;
+                const touch = e.touches ? e.touches[0] : e;
+                const rect = touchpad.getBoundingClientRect();
+                const currentX = touch.clientX - rect.left;
+                const currentY = touch.clientY - rect.top;
 
-                const deltaX = (clientX - lastTouchX) * 0.002 * sensitivityMultiplier;
-                const deltaY = (clientY - lastTouchY) * 0.002 * sensitivityMultiplier;
+                updatePointerPosition(currentX, currentY, rect);
 
-                lastTouchX = clientX;
-                lastTouchY = clientY;
+                const dx = ((currentX - startX) / (rect.width / 2)) * 0.05 * sensitivityMultiplier;
+                const dy = ((currentY - startY) / (rect.height / 2)) * 0.05 * sensitivityMultiplier;
 
-                updatePointerPosition(clientX, clientY);
-
-                if (hostConn && hostConn.open && (Math.abs(deltaX) > 0.0001 || Math.abs(deltaY) > 0.0001)) {
+                if (hostConn && hostConn.open) {
                     hostConn.send({
-                        type: 'TILT',
+                        type: 'MOVE',
                         playerId: myPlayerId,
-                        deltaX: deltaX,
-                        deltaY: deltaY
+                        dx: dx,
+                        dy: dy
                     });
                 }
-            };
 
-            const handleEnd = () => {
+                startX = currentX;
+                startY = currentY;
+            }
+
+            function handleEnd() {
                 isTouching = false;
-                if (pointer) {
-                    pointer.style.left = '50%';
-                    pointer.style.top = '50%';
-                }
-            };
+                pointer.style.top = '50%';
+                pointer.style.left = '50%';
+            }
 
-            const updatePointerPosition = (clientX, clientY) => {
-                if (!touchpad || !pointer) return;
-                const rect = touchpad.getBoundingClientRect();
-                const x = Math.max(0, Math.min(rect.width, clientX - rect.left));
-                const y = Math.max(0, Math.min(rect.height, clientY - rect.top));
-                pointer.style.left = `${x}px`;
-                pointer.style.top = `${y}px`;
-            };
+            function updatePointerPosition(x, y, rect) {
+                const clampedX = Math.max(0, Math.min(rect.width, x));
+                const clampedY = Math.max(0, Math.min(rect.height, y));
+                pointer.style.left = `${clampedX}px`;
+                pointer.style.top = `${clampedY}px`;
+            }
 
-            touchpad.addEventListener('touchstart', (e) => {
-                if (e.touches.length > 0) handleStart(e.touches[0].clientX, e.touches[0].clientY);
-            }, { passive: true });
+            touchpad.addEventListener('touchstart', handleStart, { passive: true });
+            touchpad.addEventListener('touchmove', handleMove, { passive: true });
+            touchpad.addEventListener('touchend', handleEnd);
 
-            touchpad.addEventListener('touchmove', (e) => {
-                if (e.touches.length > 0) handleMove(e.touches[0].clientX, e.touches[0].clientY);
-            }, { passive: true });
-
-            touchpad.addEventListener('touchend', handleEnd, { passive: true });
-
-            touchpad.addEventListener('mousedown', (e) => handleStart(e.clientX, e.clientY));
-            window.addEventListener('mousemove', (e) => handleMove(e.clientX, e.clientY));
+            touchpad.addEventListener('mousedown', handleStart);
+            window.addEventListener('mousemove', handleMove);
             window.addEventListener('mouseup', handleEnd);
         }
 
-        let currentGamma = 0;
-        let currentBeta = 0;
+        function addPlayer(name, conn, playerId, avatar) {
+            if (players.some(p => p.id === playerId)) return;
 
-        function startOrientationListener() {
-            if (isOrientationBound) return;
-
-            const handleOrientation = (e) => {
-                let gamma = e.gamma || 0; 
-                let beta = e.beta || 0;   
-
-                currentGamma = gamma;
-                currentBeta = beta;
-
-                const relativeGamma = Math.max(-30, Math.min(30, gamma - zeroGamma));
-                const relativeBeta = Math.max(-30, Math.min(30, beta - zeroBeta));
-                
-                const angleText = document.getElementById('tilt-angle-text');
-                if (angleText) {
-                    angleText.innerText = `${Math.round(relativeGamma)}°, ${Math.round(relativeBeta)}°`;
-                }
-
-                if (hostConn && hostConn.open && (Math.abs(relativeGamma) > 2 || Math.abs(relativeBeta) > 2)) {
-                    const deltaX = (relativeGamma / 30) * 0.025 * sensitivityMultiplier;
-                    const deltaY = (relativeBeta / 30) * 0.025 * sensitivityMultiplier;
-                    hostConn.send({ 
-                        type: 'TILT', 
-                        playerId: myPlayerId, 
-                        deltaX: deltaX,
-                        deltaY: deltaY 
-                    });
-                }
+            const p = {
+                id: playerId,
+                name: name,
+                displayName: name,
+                avatar: avatar || animalAvatars[Math.floor(Math.random() * animalAvatars.length)],
+                conn: conn,
+                isAI: false,
+                score: 0,
+                normX: 0.1 + Math.random() * 0.8,
+                normY: 0.8,
+                targetNormX: 0.5,
+                targetNormY: 0.8
             };
+            p.targetNormX = p.normX;
+            players.push(p);
+            renderLobbyPlayers();
 
-            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-                DeviceOrientationEvent.requestPermission().then(response => {
-                    if (response === 'granted') {
-                        window.addEventListener('deviceorientation', handleOrientation);
-                        isOrientationBound = true;
-                    }
-                }).catch(console.error);
-            } else {
-                window.addEventListener('deviceorientation', handleOrientation);
-                isOrientationBound = true;
+            if (players.length >= 1) {
+                document.getElementById('btn-start-game').classList.remove('hidden');
             }
         }
 
-        document.getElementById('btn-mobile-join').addEventListener('click', () => {
+        document.getElementById('btn-start-game').addEventListener('click', () => {
+            getAudioContext();
+            
+            // 播放春日節慶背景音樂「心花開」
+            const bgmAudio = document.getElementById('bgm');
+            if (bgmAudio) {
+                bgmAudio.play().catch(e => console.log("BGM Play Error:", e));
+            }
+
+            finalizePlayersAndStart();
+        });
+
+        function finalizePlayersAndStart() {
+            totalFoodToSpawn = parseInt(document.getElementById('select-food-count').value, 10);
+            foodDropSpeed = parseFloat(document.getElementById('select-drop-speed').value);
+            const aiCount = parseInt(document.getElementById('select-ai-count').value, 10);
+
+            if (aiCount > 0) {
+                for (let i = 0; i < aiCount; i++) {
+                    const aiAvatar = animalAvatars[Math.floor(Math.random() * animalAvatars.length)];
+                    const aiNames = ['🤖 寶貝小熊', '🤖 聰明小狐', '🤖 超級兔兔'];
+                    players.push({
+                        id: 'ai_' + Date.now() + '_' + i,
+                        name: aiNames[i] || `🤖 AI 助手 ${i+1}`,
+                        displayName: aiNames[i] || `🤖 AI 助手 ${i+1}`,
+                        avatar: aiAvatar,
+                        conn: null,
+                        isAI: true,
+                        score: 0,
+                        normX: 0.2 + (i * 0.3),
+                        normY: 0.8,
+                        targetNormX: 0.5,
+                        targetNormY: 0.8
+                    });
+                }
+            }
+
+            // 平分分佈角色初始 X 位置
+            const step = 0.8 / Math.max(1, players.length);
+            players.forEach((p, idx) => {
+                p.normX = 0.1 + (idx * step) + (step / 2);
+                p.targetNormX = p.normX;
+                p.normY = 0.8;
+                p.targetNormY = 0.8;
+            });
+
+            document.getElementById('view-lobby').classList.add('hidden');
+            document.getElementById('main-header').classList.add('hidden');
+            document.getElementById('main-footer').classList.add('hidden');
+
+            document.getElementById('view-game').classList.remove('hidden');
+            document.getElementById('view-game').classList.add('grid');
+
+            players.forEach(p => { if (p.conn) p.conn.send({ type: 'GAME_START' }); });
+
+            isGameRunning = true;
+            spawnedFoodCount = 0;
+            activeFoods = [];
+            scorePopups = [];
+            explosionParticles = [];
+
+            renderPlayersDashboard();
+            requestAnimationFrame(gameLoop);
+            scheduleFoodSpawning();
+        }
+
+        function renderLobbyPlayers() {
+            const container = document.getElementById('player-list-lobby');
+            container.innerHTML = '';
+            document.getElementById('player-count-badge').innerText = `${players.length} 人`;
+
+            players.forEach(p => {
+                const item = document.createElement('div');
+                item.className = 'flex justify-between items-center bg-white p-2.5 rounded-2xl border border-amber-200 text-sm shadow-sm';
+                item.innerHTML = `
+                    <div class="flex items-center gap-2 truncate">
+                        <span class="text-2xl">${p.avatar}</span>
+                        <span class="font-bold text-slate-800 truncate">${p.displayName || p.name}</span>
+                    </div>
+                    <span class="text-[10px] ${p.isAI ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'} px-2 py-0.5 rounded-full font-bold flex-shrink-0 border border-amber-300">
+                        ${p.isAI ? 'AI' : '連線'}
+                    </span>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        function renderPlayersDashboard() {
+            const dashboard = document.getElementById('players-dashboard');
+            dashboard.innerHTML = '';
+
+            document.getElementById('game-total-players-badge').innerText = `${players.length} 人`;
+
+            const sortedPlayers = [...players].sort((a, b) => b.score - a.score);
+            
+            sortedPlayers.forEach((p, rank) => {
+                const card = document.createElement('div');
+                card.className = `p-3 rounded-2xl border-2 border-amber-200 bg-white/90 flex items-center justify-between transition-all duration-200 flex-shrink-0 shadow-sm`;
+                card.innerHTML = `
+                    <div class="flex items-center gap-3 truncate max-w-[65%]">
+                        <span class="font-black text-amber-800 text-xl min-w-[28px]">#${rank + 1}</span>
+                        <span class="text-3xl">${p.avatar}</span>
+                        <span class="font-black text-slate-800 text-xl truncate tracking-wide">${p.displayName || p.name}</span>
+                    </div>
+                    <div class="flex items-center gap-2 flex-shrink-0">
+                        <span class="text-emerald-700 font-black text-2xl">${p.score} 分</span>
+                    </div>
+                `;
+                dashboard.appendChild(card);
+            });
+        }
+
+        function scheduleFoodSpawning() {
+            if (!isGameRunning) return;
+
+            if (spawnedFoodCount < totalFoodToSpawn) {
+                // 70% 機率生成正確食物，30% 機率生成不可放入物資
+                const isValid = Math.random() < 0.7;
+                const foodPool = isValid ? validFoodPool : invalidFoodPool;
+                const template = foodPool[Math.floor(Math.random() * foodPool.length)];
+
+                activeFoods.push({
+                    id: 'food_' + Date.now() + '_' + Math.random(),
+                    name: template.name,
+                    icon: template.icon,
+                    score: template.score,
+                    isValid: isValid,
+                    normX: 0.08 + Math.random() * 0.84,
+                    normY: -0.05,
+                    speed: (0.003 + Math.random() * 0.002) * foodDropSpeed
+                });
+
+                spawnedFoodCount++;
+                document.getElementById('remaining-food-badge').innerText = `🍎 剩餘物資：${totalFoodToSpawn - spawnedFoodCount}/${totalFoodToSpawn}`;
+
+                const nextDelay = 800 + Math.random() * 1200;
+                setTimeout(scheduleFoodSpawning, nextDelay);
+            }
+        }
+
+        function gameLoop() {
+            if (!isGameRunning) return;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // 更新 AI 操控邏輯
+            updateAILogic();
+
+            // 平滑移動玩家 position
+            players.forEach(p => {
+                p.normX += (p.targetNormX - p.normX) * 0.2;
+                p.normY += (p.targetNormY - p.normY) * 0.2;
+            });
+
+            // 更新並繪製食物掉落
+            for (let i = activeFoods.length - 1; i >= 0; i--) {
+                const food = activeFoods[i];
+                food.normY += food.speed;
+
+                const px = food.normX * canvas.width;
+                const py = food.normY * canvas.height;
+
+                // 繪製物資圖示與標籤
+                ctx.save();
+                ctx.font = '36px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(food.icon, px, py);
+
+                ctx.font = 'bold 12px "Noto Sans TC", sans-serif';
+                ctx.fillStyle = food.isValid ? '#065f46' : '#991b1b';
+                ctx.fillText(food.name, px, py + 26);
+                ctx.restore();
+
+                // 碰撞檢測 (與玩家角色)
+                players.forEach(p => {
+                    const playerPx = p.normX * canvas.width;
+                    const playerPy = p.normY * canvas.height;
+
+                    const dist = Math.hypot(px - playerPx, py - playerPy);
+                    if (dist < 45) { // 碰撞成功接取
+                        p.score += food.score;
+
+                        // 產生得分躍動數值特效 (+2 或 -1)
+                        scorePopups.push({
+                            text: food.score > 0 ? `+${food.score}` : `${food.score}`,
+                            color: food.score > 0 ? '#10b981' : '#f43f5e',
+                            px: playerPx,
+                            py: playerPy - 30,
+                            alpha: 1.0
+                        });
+
+                        if (food.score > 0) {
+                            playScoreSound();
+                        } else {
+                            playExplosionSound();
+                            createExplosionParticles(playerPx, playerPy);
+                        }
+
+                        renderPlayersDashboard();
+                        activeFoods.splice(i, 1);
+                    }
+                });
+
+                // 超出底部邊界移除
+                if (food.normY > 1.05) {
+                    activeFoods.splice(i, 1);
+                }
+            }
+
+            // 繪製爆破特效粒子
+            updateAndDrawExplosions();
+
+            // 繪製玩家角色 (籃子與動物頭像)
+            players.forEach(p => {
+                const px = p.normX * canvas.width;
+                const py = p.normY * canvas.height;
+
+                ctx.save();
+                // 繪製竹籃
+                ctx.font = '42px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('🧺', px, py + 10);
+
+                // 繪製動物頭像
+                ctx.font = '32px sans-serif';
+                ctx.fillText(p.avatar, px, py - 18);
+
+                // 暱稱標籤
+                ctx.font = 'bold 14px "Noto Sans TC", sans-serif';
+                ctx.fillStyle = '#1e293b';
+                ctx.fillText(p.displayName || p.name, px, py + 38);
+                ctx.restore();
+            });
+
+            // 繪製躍動分數彈出特效
+            updateAndDrawScorePopups();
+
+            // 判斷遊戲是否結束 (物資全部派發且畫面清空)
+            if (spawnedFoodCount >= totalFoodToSpawn && activeFoods.length === 0) {
+                isGameRunning = false;
+                setTimeout(showFinalResult, 1500);
+            } else {
+                requestAnimationFrame(gameLoop);
+            }
+        }
+
+        function createExplosionParticles(x, y) {
+            for (let i = 0; i < 15; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = 2 + Math.random() * 4;
+                explosionParticles.push({
+                    x: x,
+                    y: y,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed,
+                    radius: 3 + Math.random() * 4,
+                    color: ['#f43f5e', '#f59e0b', '#ef4444'][Math.floor(Math.random() * 3)],
+                    alpha: 1.0
+                });
+            }
+        }
+
+        function updateAndDrawExplosions() {
+            for (let i = explosionParticles.length - 1; i >= 0; i--) {
+                const p = explosionParticles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.alpha -= 0.03;
+
+                ctx.save();
+                ctx.globalAlpha = Math.max(0, p.alpha);
+                ctx.fillStyle = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+
+                if (p.alpha <= 0) {
+                    explosionParticles.splice(i, 1);
+                }
+            }
+        }
+
+        function updateAndDrawScorePopups() {
+            for (let i = scorePopups.length - 1; i >= 0; i--) {
+                const pop = scorePopups[i];
+                pop.py -= 1.2;
+                pop.alpha -= 0.02;
+
+                ctx.save();
+                ctx.globalAlpha = Math.max(0, pop.alpha);
+                ctx.font = 'black 28px "Noto Sans TC", sans-serif';
+                ctx.fillStyle = pop.color;
+                ctx.textAlign = 'center';
+                ctx.fillText(pop.text, pop.px, pop.py);
+                ctx.restore();
+
+                if (pop.alpha <= 0) {
+                    scorePopups.splice(i, 1);
+                }
+            }
+        }
+
+        function updateAILogic() {
+            players.filter(p => p.isAI).forEach(ai => {
+                // 尋找距離最近且為正向加分的食物
+                const validFoods = activeFoods.filter(f => f.isValid && f.normY > 0);
+                if (validFoods.length > 0) {
+                    let nearest = validFoods[0];
+                    let minDist = Math.hypot(nearest.normX - ai.normX, nearest.normY - ai.normY);
+
+                    validFoods.forEach(f => {
+                        const d = Math.hypot(f.normX - ai.normX, f.normY - ai.normY);
+                        if (d < minDist) {
+                            minDist = d;
+                            nearest = f;
+                        }
+                    });
+
+                    ai.targetNormX = nearest.normX;
+                }
+            });
+        }
+
+        function documentMobileJoin() {
             const name = document.getElementById('mobile-name-input').value.trim();
             if (!name) return alert('請輸入暱稱！');
 
-            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-                DeviceOrientationEvent.requestPermission().catch(() => {});
-            }
+            setupDeviceOrientation();
 
             if (hostConn && hostConn.open) {
-                hostConn.send({ type: 'JOIN', name: name, playerId: myPlayerId });
+                hostConn.send({
+                    type: 'JOIN',
+                    name: name,
+                    playerId: myPlayerId,
+                    avatar: myAvatar
+                });
                 document.getElementById('player-mobile-name').innerText = `玩家：${name}`;
+                document.getElementById('mobile-avatar-display').innerText = myAvatar;
+                document.getElementById('mobile-avatar-display').classList.remove('hidden');
+
                 document.getElementById('mobile-join-form').classList.add('hidden');
+                document.getElementById('mobile-controls').classList.remove('hidden');
+                document.getElementById('mobile-controls').classList.add('flex');
                 document.getElementById('mobile-status-text').innerText = '已成功進入大廳，等待開賽...';
             }
-        });
+        }
+
+        document.getElementById('btn-mobile-join').addEventListener('click', documentMobileJoin);
 
         function showMobileFinalResult(rank, score, totalPlayers) {
             document.getElementById('mobile-top-bar').classList.add('hidden');
@@ -825,359 +1132,8 @@
                 statusEl.innerText = '👏 恭喜榮獲 季軍佳績！';
             } else {
                 iconEl.innerText = '🏅';
-                statusEl.innerText = `感謝您的參與！表現相當精彩！`;
+                statusEl.innerText = `感謝您的參與！接物手感非常厲害！`;
             }
-        }
-
-        function getRandomAvatar() {
-            return animalAvatars[Math.floor(Math.random() * animalAvatars.length)];
-        }
-
-        function addPlayer(name, conn, playerId) {
-            if (players.some(p => p.id === playerId)) return;
-
-            const assignedAvatar = getRandomAvatar();
-
-            const p = {
-                id: playerId,
-                name: name,
-                displayName: name,
-                avatar: assignedAvatar,
-                conn: conn,
-                isAI: false,
-                score: 0,
-                x: 0.1 + Math.random() * 0.8,
-                y: 0.88                       
-            };
-            players.push(p);
-
-            if (conn) {
-                conn.send({ type: 'ASSIGN_AVATAR', avatar: assignedAvatar });
-            }
-
-            renderLobbyPlayers();
-
-            if (players.length >= 1) {
-                document.getElementById('btn-start-game').classList.remove('hidden');
-            }
-        }
-
-        document.getElementById('btn-start-game').addEventListener('click', () => {
-            finalizePlayersAndStart();
-        });
-
-        function finalizePlayersAndStart() {
-            totalFoodToSpawn = parseInt(document.getElementById('select-food-count').value, 10);
-            foodDropSpeed = parseFloat(document.getElementById('select-drop-speed').value);
-            const aiToAddCount = parseInt(document.getElementById('select-ai-count').value, 10);
-
-            const aiNames = ['🤖 智慧小安', '🤖 助人小傑'];
-
-            for (let i = 0; i < aiToAddCount; i++) {
-                const aiAvatar = getRandomAvatar();
-                players.push({
-                    id: 'ai_' + Date.now() + '_' + i,
-                    name: aiNames[i] || `🤖 AI助手${i+1}`,
-                    displayName: aiNames[i] || `🤖 AI助手${i+1}`,
-                    avatar: aiAvatar,
-                    conn: null,
-                    isAI: true,
-                    score: 0,
-                    x: 0.3 + (i * 0.4),
-                    y: 0.88
-                });
-            }
-
-            renderLobbyPlayers();
-
-            // 按開始遊戲後播放台語歌曲「心花開」
-            const bgm = document.getElementById('bgm');
-            getAudioContext();
-            if (bgm) {
-                bgm.play().catch(e => console.log("Audio play blocked", e));
-            }
-
-            startGame();
-        }
-
-        function renderLobbyPlayers() {
-            const container = document.getElementById('player-list-lobby');
-            container.innerHTML = '';
-            document.getElementById('player-count-badge').innerText = `${players.length} 人`;
-
-            players.forEach(p => {
-                const item = document.createElement('div');
-                item.className = 'flex justify-between items-center bg-white p-2.5 rounded-xl border border-amber-200 text-sm shadow-sm';
-                item.innerHTML = `
-                    <div class="flex items-center gap-2 truncate">
-                        <span class="text-2xl">${p.avatar}</span>
-                        <span class="font-bold text-slate-700 truncate">${p.displayName || p.name}</span>
-                    </div>
-                    <span class="text-[10px] ${p.isAI ? 'bg-amber-100 text-amber-800 border-amber-300' : 'bg-emerald-100 text-emerald-800 border-emerald-300'} px-2 py-0.5 rounded font-bold border flex-shrink-0">
-                        ${p.isAI ? 'AI' : '連線'}
-                    </span>
-                `;
-                container.appendChild(item);
-            });
-        }
-
-        function startGame() {
-            document.getElementById('view-lobby').classList.add('hidden');
-            document.getElementById('main-header').classList.add('hidden');
-            document.getElementById('main-footer').classList.add('hidden');
-
-            document.getElementById('view-game').classList.remove('hidden');
-            document.getElementById('view-game').classList.add('grid');
-
-            canvas = document.getElementById('gameCanvas');
-            ctx = canvas.getContext('2d');
-            resizeCanvas();
-
-            players.forEach(p => { if (p.conn) p.conn.send({ type: 'GAME_START' }); });
-
-            spawnedFoodCount = 0;
-            activeFoods = [];
-            scorePopups = [];
-            explosionParticles = [];
-            isGameRunning = true;
-
-            requestAnimationFrame(gameLoop);
-            spawnFoodInterval();
-        }
-
-        function resizeCanvas() {
-            if (!canvas) return;
-            canvas.width = canvas.parentElement.clientWidth;
-            canvas.height = canvas.parentElement.clientHeight;
-        }
-
-        window.addEventListener('resize', resizeCanvas);
-
-        function spawnFoodInterval() {
-            if (!isGameRunning) return;
-
-            if (spawnedFoodCount < totalFoodToSpawn) {
-                const isGood = Math.random() < 0.7;
-                const pool = isGood ? validFoodPool : invalidFoodPool;
-                const foodItem = pool[Math.floor(Math.random() * pool.length)];
-
-                // 隨機某個食物加快 20%-100%
-                let speedBoostLevel = 0;
-                let speedMultiplier = 1.0;
-                if (Math.random() < 0.35) { // 約 35% 機率觸發加速食物
-                    speedBoostLevel = Math.floor(Math.random() * 5) + 1; // 1: 20%, 2: 40%, 3: 60%, 4: 80%, 5: 100%
-                    speedMultiplier = 1 + (speedBoostLevel * 0.2);
-                }
-
-                // 每加快 20%，分數加倍計算
-                let finalScore = foodItem.score;
-                if (speedBoostLevel > 0) {
-                    finalScore = foodItem.score * Math.pow(2, speedBoostLevel);
-                }
-
-                const baseSpeed = (0.003 + Math.random() * 0.002) * (foodDropSpeed / 3.5);
-
-                activeFoods.push({
-                    id: Date.now() + '_' + Math.random(),
-                    name: foodItem.name,
-                    icon: foodItem.icon,
-                    score: finalScore,
-                    isGood: isGood,
-                    speedBoostLevel: speedBoostLevel,
-                    x: 0.05 + Math.random() * 0.9,
-                    y: 0,
-                    speed: baseSpeed * speedMultiplier
-                });
-
-                spawnedFoodCount++;
-                document.getElementById('remaining-food-badge').innerText = `🍎 剩餘物資：${totalFoodToSpawn - spawnedFoodCount}/${totalFoodToSpawn}`;
-
-                const nextInterval = 1000 + Math.random() * 1500;
-                setTimeout(spawnFoodInterval, nextInterval);
-            }
-        }
-
-        function gameLoop() {
-            if (!isGameRunning) return;
-
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            // 更新 AI 位置
-            players.filter(p => p.isAI).forEach(ai => {
-                const goodFoods = activeFoods.filter(f => f.score > 0);
-                if (goodFoods.length > 0) {
-                    const target = goodFoods[0];
-                    if (ai.x < target.x) ai.x += 0.003;
-                    if (ai.x > target.x) ai.x -= 0.003;
-                    if (ai.y < target.y) ai.y += 0.003;
-                    if (ai.y > target.y) ai.y -= 0.003;
-                }
-            });
-
-            // 繪製與更新食物
-            for (let i = activeFoods.length - 1; i >= 0; i--) {
-                const food = activeFoods[i];
-                food.y += food.speed;
-
-                const drawX = food.x * canvas.width;
-                const drawY = food.y * canvas.height;
-
-                // 若為加速食物，畫出火花裝飾
-                if (food.speedBoostLevel > 0) {
-                    ctx.font = '18px sans-serif';
-                    ctx.textAlign = 'center';
-                    ctx.fillText('⚡', drawX - 25, drawY - 15);
-                }
-
-                // 繪製食物圖示與名稱
-                ctx.font = '43px sans-serif';
-                ctx.textAlign = 'center';
-                ctx.fillText(food.icon, drawX, drawY);
-
-                ctx.font = 'bold 14px "Noto Sans TC"';
-                ctx.fillStyle = food.score > 0 ? '#15803d' : '#e11d48';
-                ctx.fillText(food.name, drawX, drawY + 24);
-
-                // 檢測是否碰撞玩家
-                players.forEach(p => {
-                    const playerX = p.x * canvas.width;
-                    const playerY = p.y * canvas.height;
-                    const distX = Math.abs(drawX - playerX);
-                    const distY = Math.abs(drawY - playerY);
-
-                    if (distX < 45 && distY < 45) {
-                        p.score += food.score;
-
-                        if (food.score > 0) {
-                            // 正確食物音效與躍動文字效果
-                            playScoreSound();
-                            scorePopups.push({
-                                text: `+${food.score}`,
-                                x: drawX,
-                                y: drawY - 10,
-                                alpha: 1.0,
-                                scale: food.speedBoostLevel > 0 ? 2.0 : 1.5,
-                                color: food.speedBoostLevel > 0 ? '#ea580c' : '#f59e0b'
-                            });
-                        } else {
-                            // 不能放進去的食物：觸發爆炸特效與音效
-                            playExplosionSound();
-                            createExplosion(drawX, drawY);
-                            scorePopups.push({
-                                text: `${food.score}`,
-                                x: drawX,
-                                y: drawY - 10,
-                                alpha: 1.0,
-                                scale: 1.6,
-                                color: '#f43f5e'
-                            });
-                        }
-
-                        activeFoods.splice(i, 1);
-                    }
-                });
-
-                if (activeFoods[i] && food.y > 1.05) {
-                    activeFoods.splice(i, 1);
-                }
-            }
-
-            // 繪製與更新爆炸粒子特效
-            for (let i = explosionParticles.length - 1; i >= 0; i--) {
-                const p = explosionParticles[i];
-                p.x += p.vx;
-                p.y += p.vy;
-                p.alpha -= p.decay;
-
-                ctx.save();
-                ctx.globalAlpha = Math.max(0, p.alpha);
-                ctx.fillStyle = p.color;
-                ctx.beginPath();
-                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.restore();
-
-                if (p.alpha <= 0) {
-                    explosionParticles.splice(i, 1);
-                }
-            }
-
-            // 繪製得分飄浮特效
-            for (let i = scorePopups.length - 1; i >= 0; i--) {
-                const pop = scorePopups[i];
-                pop.y -= 1.5;
-                pop.alpha -= 0.025;
-                if (pop.scale > 1.0) pop.scale -= 0.02;
-
-                ctx.save();
-                ctx.globalAlpha = Math.max(0, pop.alpha);
-                ctx.font = `900 ${Math.round(28 * pop.scale)}px "Noto Sans TC"`;
-                ctx.fillStyle = pop.color;
-                ctx.textAlign = 'center';
-                ctx.shadowColor = 'rgba(0,0,0,0.3)';
-                ctx.shadowBlur = 6;
-                ctx.fillText(pop.text, pop.x, pop.y);
-                ctx.restore();
-
-                if (pop.alpha <= 0) {
-                    scorePopups.splice(i, 1);
-                }
-            }
-
-            // 繪製玩家角色
-            players.forEach(p => {
-                const px = p.x * canvas.width;
-                const py = p.y * canvas.height;
-
-                ctx.font = '52px sans-serif';
-                ctx.textAlign = 'center';
-                ctx.fillText(p.avatar, px, py);
-
-                ctx.font = 'bold 16px "Noto Sans TC"';
-                ctx.fillStyle = '#1e293b';
-                ctx.fillText(p.displayName || p.name, px, py + 25);
-
-                ctx.font = '900 14px "Noto Sans TC"';
-                ctx.fillStyle = '#d97706';
-                ctx.fillText(`${p.score} 分`, px, py + 45);
-            });
-
-            renderPlayersDashboard();
-
-            // 檢查遊戲結束條件
-            if (spawnedFoodCount >= totalFoodToSpawn && activeFoods.length === 0) {
-                isGameRunning = false;
-                setTimeout(showFinalResult, 1500);
-            } else {
-                requestAnimationFrame(gameLoop);
-            }
-        }
-
-        function renderPlayersDashboard() {
-            const dashboard = document.getElementById('players-dashboard');
-            dashboard.innerHTML = '';
-
-            document.getElementById('game-total-players-badge').innerText = `${players.length} 人`;
-
-            const sortedPlayers = [...players].sort((a, b) => b.score - a.score);
-            
-            sortedPlayers.forEach((p, rank) => {
-                const card = document.createElement('div');
-                const displayName = p.displayName || p.name;
-
-                card.className = `p-2.5 md:p-3 rounded-2xl border border-amber-200 bg-white/90 flex items-center justify-between transition-all duration-200 flex-shrink-0 shadow-sm`;
-                card.innerHTML = `
-                    <div class="flex items-center gap-2.5 truncate max-w-[65%]">
-                        <span class="font-black text-emerald-700 text-lg md:text-xl min-w-[30px] text-center">#${rank + 1}</span>
-                        <span class="text-2xl flex-shrink-0">${p.avatar}</span>
-                        <span class="font-black text-slate-800 text-xl md:text-2xl truncate tracking-wide leading-tight">${displayName}</span>
-                    </div>
-                    <div class="flex items-center gap-2.5 flex-shrink-0">
-                        <span class="text-amber-600 font-black text-xl md:text-2xl">${p.score} 分</span>
-                    </div>
-                `;
-                dashboard.appendChild(card);
-            });
         }
 
         function renderParticipantList(elementId, playerGroup, startIndex = 1) {
@@ -1186,15 +1142,15 @@
             playerGroup.forEach((p, idx) => {
                 const rankNum = startIndex + idx;
                 const item = document.createElement('div');
-                item.className = 'flex flex-col p-2.5 bg-white rounded-xl border border-amber-200 text-sm gap-1 shadow-sm';
+                item.className = 'flex flex-col p-2.5 bg-amber-50/60 rounded-xl border border-amber-200 text-sm gap-1';
                 item.innerHTML = `
                     <div class="flex items-center gap-2 truncate w-full">
                         <span class="font-bold text-amber-800 text-xs w-6 flex-shrink-0">#${rankNum}</span>
                         <span class="text-xl">${p.avatar}</span>
-                        <span class="font-bold text-slate-700 truncate">${p.name}</span>
+                        <span class="font-bold text-slate-800 truncate">${p.displayName || p.name}</span>
                     </div>
                     <div class="text-right w-full pl-8">
-                        <span class="font-black text-amber-600">${p.score} 分</span>
+                        <span class="font-black text-emerald-700">${p.score} 分</span>
                     </div>
                 `;
                 container.appendChild(item);
@@ -1202,16 +1158,17 @@
         }
 
         function showFinalResult() {
-            // 暫停主背景音樂「心花開」並播放問答遊戲頒獎音樂
-            const bgm = document.getElementById('bgm');
-            if (bgm) {
-                bgm.pause();
-                bgm.currentTime = 0;
-            }
-            playMarioVictoryFanfare();
-
             document.getElementById('view-game').classList.add('hidden');
             document.getElementById('view-result').classList.remove('hidden');
+
+            // 暫停背景音樂「心花開」
+            const bgmAudio = document.getElementById('bgm');
+            if (bgmAudio) {
+                bgmAudio.pause();
+            }
+
+            // 播放與「安得烈食物銀行問答遊戲」完全一樣的瑪利歐勝利音樂音效
+            playMarioVictoryFanfare();
 
             const allSortedPlayers = [...players].sort((a, b) => b.score - a.score);
 
@@ -1242,64 +1199,83 @@
 
             const top3 = allSortedPlayers.slice(0, 3);
             const medals = ['🥇 第一名 冠軍', '🥈 第二名 亞軍', '🥉 第三名 季軍'];
-            const colors = ['border-amber-400 bg-amber-100/80 shadow-md', 'border-slate-300 bg-slate-100/80', 'border-orange-300 bg-orange-100/80'];
+            const colors = ['border-amber-400 bg-amber-200/50 shadow-lg', 'border-slate-300 bg-slate-100/80', 'border-amber-600 bg-amber-100/60'];
 
             top3.forEach((p, idx) => {
                 const card = document.createElement('div');
                 
                 if (idx === 0) {
-                    card.className = `w-full max-w-md p-5 rounded-3xl border-4 ${colors[idx]} flex flex-col items-center justify-center my-1`;
+                    card.className = `w-full max-w-md p-5 rounded-3xl border-4 ${colors[idx]} flex flex-col items-center justify-center my-1 shadow-xl`;
                     card.innerHTML = `
-                        <span class="text-sm font-black text-amber-900 bg-amber-200 px-4 py-1 rounded-full border border-amber-400 mb-1">👑 春日冠軍王座 👑</span>
-                        <div class="text-6xl my-1">${p.avatar}</div>
-                        <div class="text-3xl font-black text-slate-800 tracking-wide text-center">${p.name}</div>
-                        <div class="text-2xl font-black text-amber-600 mt-2">${p.score} 分</div>
+                        <span class="text-sm font-black text-amber-900 bg-amber-300 px-4 py-1 rounded-full border border-amber-400 mb-1">👑 冠軍王座 👑</span>
+                        <div class="text-5xl my-1">${p.avatar}</div>
+                        <div class="text-3xl font-black text-slate-800 tracking-wide text-center">${p.displayName || p.name}</div>
+                        <div class="text-2xl font-black text-emerald-700 mt-2">${p.score} 分</div>
                     `;
                 } else {
-                    card.className = `w-full max-w-md p-4 rounded-2xl border-2 ${colors[idx]} flex justify-between items-center px-6`;
+                    card.className = `w-full max-w-md p-4 rounded-2xl border-2 ${colors[idx]} flex justify-between items-center px-6 shadow-sm`;
                     card.innerHTML = `
                         <div class="flex items-center gap-4">
-                            <span class="text-4xl">${p.avatar}</span>
+                            <span class="text-3xl">${p.avatar}</span>
                             <div class="text-left">
                                 <span class="text-xs font-bold text-slate-500">${medals[idx]}</span>
-                                <div class="text-2xl font-black text-slate-800">${p.name}</div>
+                                <div class="text-2xl font-black text-slate-800">${p.displayName || p.name}</div>
                             </div>
                         </div>
                         <div class="text-right">
-                            <div class="text-xl font-black text-amber-600">${p.score} 分</div>
+                            <div class="text-xl font-black text-emerald-700 mt-1">${p.score} 分</div>
                         </div>
                     `;
                 }
                 top3Container.appendChild(card);
             });
 
-            launch8SecFireworks();
-        }
-
-        function launch8SecFireworks() {
+            // 完全跟「安得烈食物銀行問答遊戲」一樣的煙火（Canvas Confetti）效果
             const duration = 8 * 1000;
             const animationEnd = Date.now() + duration;
 
-            const interval = setInterval(() => {
-                const timeLeft = animationEnd - Date.now();
+            function randomInRange(min, max) {
+                return Math.random() * (max - min) + min;
+            }
 
+            const interval = setInterval(function() {
+                const timeLeft = animationEnd - Date.now();
                 if (timeLeft <= 0) {
                     return clearInterval(interval);
                 }
 
-                playFireworkBoomSound();
+                confetti({
+                    particleCount: Math.floor(randomInRange(20, 40)),
+                    spread: randomInRange(50, 100),
+                    startVelocity: randomInRange(25, 45),
+                    origin: { x: randomInRange(0.1, 0.4), y: randomInRange(0.2, 0.5) },
+                    ticks: 200,
+                    gravity: 0.8,
+                    colors: ['#00f3ff', '#b000ff', '#ff007f', '#00ff66', '#ffcc00']
+                });
 
                 confetti({
-                    particleCount: 40,
-                    startVelocity: 30,
-                    spread: 360,
-                    ticks: 60,
-                    origin: {
-                        x: Math.random(),
-                        y: Math.random() * 0.6 + 0.1
-                    }
+                    particleCount: Math.floor(randomInRange(20, 40)),
+                    spread: randomInRange(50, 100),
+                    startVelocity: randomInRange(25, 45),
+                    origin: { x: randomInRange(0.6, 0.9), y: randomInRange(0.2, 0.5) },
+                    ticks: 200,
+                    gravity: 0.8,
+                    colors: ['#00f3ff', '#b000ff', '#ff007f', '#00ff66', '#ffcc00']
                 });
-            }, 350);
+
+                if (Math.random() < 0.4) {
+                    confetti({
+                        particleCount: 60,
+                        spread: 360,
+                        startVelocity: 35,
+                        origin: { x: 0.5, y: 0.3 },
+                        ticks: 250,
+                        gravity: 0.6,
+                        colors: ['#ffcc00', '#ffffff', '#ff007f']
+                    });
+                }
+            }, 300);
         }
     </script>
 </body>
