@@ -576,7 +576,25 @@
             }
         }
 
+        // 解鎖瀏覽器音訊限制
+        function unlockAudio() {
+            getAudioContext();
+            const bgm = document.getElementById('bgm');
+            if (bgm && bgm.paused) {
+                bgm.play().then(() => {
+                    bgm.pause(); // 預先點擊觸發以解鎖音訊權限
+                    bgm.currentTime = 0;
+                }).catch(() => {});
+            }
+            window.removeEventListener('click', unlockAudio);
+            window.removeEventListener('touchstart', unlockAudio);
+        }
+
         window.onload = () => {
+            // 全域解鎖瀏覽器音訊
+            window.addEventListener('click', unlockAudio);
+            window.addEventListener('touchstart', unlockAudio);
+
             const urlParams = new URLSearchParams(window.location.search);
             const hostId = urlParams.get('host');
 
@@ -890,11 +908,17 @@
 
             renderLobbyPlayers();
 
-            // 按開始遊戲後播放 Two_Coins_Left.mp3
+            // 按開始遊戲後播放 Two_Coins_Left.mp3 (提升相容性與自動播放解鎖機制)
             const bgm = document.getElementById('bgm');
             getAudioContext();
             if (bgm) {
-                bgm.play().catch(e => console.log("Audio play blocked", e));
+                bgm.currentTime = 0;
+                const playPromise = bgm.play();
+                if (playPromise !== undefined) {
+                    playPromise.catch(e => {
+                        console.warn("Autoplay was blocked by browser. Retrying on user interaction...", e);
+                    });
+                }
             }
 
             startGame();
