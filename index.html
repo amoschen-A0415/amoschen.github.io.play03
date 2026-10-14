@@ -326,7 +326,7 @@
                     <div id="players-dashboard" class="flex flex-col space-y-2 overflow-y-auto flex-grow pr-1"></div>
                 </div>
 
-                <!-- 【優化升級】「🎯 遊戲目標」獨立外框與大字體分列顯示 -->
+                <!-- 「🎯 遊戲目標」獨立外框與大字體分列顯示 -->
                 <div id="game-goal-box" class="mt-2 p-2.5 bg-gradient-to-br from-amber-50 to-chch-lightOrange rounded-2xl border-2 border-amber-400 shadow-md flex-shrink-0">
                     <div class="text-xs md:text-sm font-black text-chch-orange border-b-2 border-amber-300 pb-1 mb-1.5 flex items-center justify-between">
                         <span>🎯 遊戲目標</span>
@@ -440,28 +440,28 @@
 
                 </div>
 
-                <!-- 通知窗格背景透明度 25% (bg-black/25) -->
-                <div id="tile-notice-overlay" class="hidden absolute inset-0 z-40 bg-black/25 backdrop-blur-sm flex items-center justify-center p-6">
-                    <div id="notice-box" class="w-[80%] h-[80%] bg-white/95 rounded-3xl border-4 border-chch-green shadow-2xl p-6 flex items-center justify-between overflow-hidden relative">
+                <!-- 【修改優化 1】通知窗格：透明度極淡（bg-black/10），且卡片縮小為原 90% 大小（w-[72%], h-[72%]） -->
+                <div id="tile-notice-overlay" class="hidden absolute inset-0 z-40 bg-black/10 backdrop-blur-[2px] flex items-center justify-center p-6">
+                    <div id="notice-box" class="w-[72%] h-[72%] bg-white/95 rounded-3xl border-4 border-chch-green shadow-2xl p-6 flex items-center justify-between overflow-hidden relative">
                         <div class="w-1/2 h-full flex flex-col items-center justify-around border-r-2 border-chch-green/20 p-4">
-                            <span id="notice-icon-1" class="text-[8.5rem]">🚨</span>
-                            <span id="notice-icon-2" class="text-[8.5rem]">🍲</span>
+                            <span id="notice-icon-1" class="text-[7.5rem]">🚨</span>
+                            <span id="notice-icon-2" class="text-[7.5rem]">🍲</span>
                         </div>
                         <div class="w-1/2 h-full flex flex-col justify-between p-6 text-left">
                             <div class="w-full flex-grow flex flex-col justify-start">
                                 <div id="notice-title" class="text-3xl md:text-4xl font-black text-chch-darkGreen mb-2">急難救助</div>
                                 <div id="notice-original-text" class="text-xl md:text-2xl font-extrabold text-slate-700 leading-snug">發生重大生命事件，安得烈即刻救援。</div>
                                 
-                                <div class="my-4 flex items-center justify-start">
-                                    <span id="score-change-text" class="text-6xl md:text-7xl font-black text-rose-600 tracking-wider drop-shadow-lg inline-block">
+                                <div class="my-3 flex items-center justify-start">
+                                    <span id="score-change-text" class="text-5xl md:text-6xl font-black text-rose-600 tracking-wider drop-shadow-lg inline-block">
                                         +20分
                                     </span>
                                 </div>
                             </div>
 
-                            <div class="w-full bg-chch-lightOrange border-2 border-amber-300 rounded-2xl p-4 flex-shrink-0">
+                            <div class="w-full bg-chch-lightOrange border-2 border-amber-300 rounded-2xl p-3 flex-shrink-0">
                                 <div class="text-xs font-black text-chch-orange mb-1">💡 小朋友白話解說：</div>
-                                <div id="notice-child-text" class="text-lg md:text-xl font-bold text-amber-950 leading-normal">遇到超級危險的事情時，安得烈叔叔阿姨會馬上跑過來幫忙喔！</div>
+                                <div id="notice-child-text" class="text-base md:text-lg font-bold text-amber-950 leading-normal">遇到超級危險的事情時，安得烈叔叔阿姨會馬上跑過來幫忙喔！</div>
                             </div>
                         </div>
                     </div>
@@ -838,7 +838,7 @@
                 return;
             }
 
-            // 更新「🎯 遊戲目標」面板顯示（字體加大，分列明確）
+            // 更新「🎯 遊戲目標」面板顯示
             const goalModeLabel = document.getElementById('goal-mode-label');
             const goalTargetText = document.getElementById('goal-target-text');
             const goalRuleText = document.getElementById('goal-rule-text');
@@ -1061,6 +1061,7 @@
             }, 1000);
         }
 
+        // 【修改優化 2】玩家小球隨機在 4 個角落出生，且周圍 2 個小球距離內保證不會生成其它號碼球
         function startBoardBallCollisionPhase(p) {
             const container = document.getElementById('center-ball-container');
             
@@ -1073,17 +1074,49 @@
             const playerBall = document.getElementById('active-player-ball');
             playerBall.innerText = p.avatar;
 
-            playerBallPos = { x: container.clientWidth / 2 - 24, y: container.clientHeight / 2 - 24 };
+            const cw = container.clientWidth;
+            const ch = container.clientHeight;
+            const margin = 20;
+
+            // 定義 4 個角落座標：0:左上, 1:右上, 2:左下, 3:右下
+            const cornerPositions = [
+                { x: margin, y: margin },
+                { x: cw - 48 - margin, y: margin },
+                { x: margin, y: ch - 48 - margin },
+                { x: cw - 48 - margin, y: ch - 48 - margin }
+            ];
+
+            // 隨機選定一個角落出生
+            const chosenCorner = cornerPositions[Math.floor(Math.random() * cornerPositions.length)];
+            playerBallPos = { x: chosenCorner.x, y: chosenCorner.y };
             playerBall.style.left = `${playerBallPos.x}px`;
             playerBall.style.top = `${playerBallPos.y}px`;
 
             ballTargetList = [];
+            
+            // 安全開局距離：至少 2 個小球直徑/距離 (約 90px)
+            const safeDistance = 90;
+
             for (let i = 1; i <= 6; i++) {
                 const ball = document.createElement('div');
                 ball.className = 'target-num-ball absolute w-11 h-11 bg-chch-green text-white font-black text-xl rounded-full flex items-center justify-center shadow-lg border-2 border-white transition-transform';
-                const rx = Math.floor(Math.random() * (container.clientWidth - 50)) + 5;
-                const ry = Math.floor(Math.random() * (container.clientHeight - 50)) + 5;
                 
+                let rx = 0, ry = 0;
+                let isValidPos = false;
+                let attempts = 0;
+
+                // 隨機生成位置，確保距離玩家出生角落大於安全距離
+                while (!isValidPos && attempts < 100) {
+                    attempts++;
+                    rx = Math.floor(Math.random() * (cw - 50)) + 5;
+                    ry = Math.floor(Math.random() * (ch - 50)) + 5;
+
+                    const distToPlayer = Math.hypot(rx - playerBallPos.x, ry - playerBallPos.y);
+                    if (distToPlayer >= safeDistance) {
+                        isValidPos = true;
+                    }
+                }
+
                 const vx = (Math.random() - 0.5) * 1.5;
                 const vy = (Math.random() - 0.5) * 1.5;
 
@@ -1574,7 +1607,7 @@
             document.getElementById('notice-child-text').innerText = childText;
 
             scoreEl.innerText = scoreDelta >= 0 ? `+${scoreDelta}分` : `${scoreDelta}分`;
-            scoreEl.className = "text-6xl md:text-7xl font-black text-rose-600 tracking-wider drop-shadow-lg inline-block animate-score-explode animate-vibrate-score";
+            scoreEl.className = "text-5xl md:text-6xl font-black text-rose-600 tracking-wider drop-shadow-lg inline-block animate-score-explode animate-vibrate-score";
 
             overlay.classList.remove('hidden');
 
@@ -1599,15 +1632,12 @@
             }, 4000);
         }
 
-        // 核心邏輯：勝負判斷條件
         function checkGameEndConditions() {
             let isEnd = false;
 
             if (roundMode === 'score') {
-                // 分數制：有人達到或超過目標分數即結束
                 if (players.some(p => p.score >= targetScore)) isEnd = true;
             } else {
-                // 圈數制：第一個完成指定圈數即結束，並比身上的總積分
                 const maxLapsNeeded = parseInt(roundMode, 10);
                 if (players.some(p => p.laps >= maxLapsNeeded)) isEnd = true;
             }
@@ -1626,7 +1656,6 @@
 
             fadeMusicVolumeOut();
 
-            // 結算排名：一律按照身上的「分數 (score)」高低由大到小排序
             const allSorted = [...players].sort((a,b) => b.score - a.score);
 
             for (let i = 0; i < 4; i++) {
