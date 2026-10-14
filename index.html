@@ -326,20 +326,28 @@
                     <div id="players-dashboard" class="flex flex-col space-y-2 overflow-y-auto flex-grow pr-1"></div>
                 </div>
 
-                <!-- 【新增需求】音樂播放器上方的「遊戲目標」獨立外框 -->
-                <div id="game-goal-box" class="mt-2 p-2 bg-chch-lightOrange rounded-xl border-2 border-amber-300 shadow-sm flex-shrink-0">
-                    <div class="text-[11px] md:text-xs font-black text-chch-orange border-b border-amber-300/60 pb-1 mb-1 flex items-center justify-between">
+                <!-- 【優化升級】「🎯 遊戲目標」獨立外框與大字體分列顯示 -->
+                <div id="game-goal-box" class="mt-2 p-2.5 bg-gradient-to-br from-amber-50 to-chch-lightOrange rounded-2xl border-2 border-amber-400 shadow-md flex-shrink-0">
+                    <div class="text-xs md:text-sm font-black text-chch-orange border-b-2 border-amber-300 pb-1 mb-1.5 flex items-center justify-between">
                         <span>🎯 遊戲目標</span>
-                        <span id="goal-mode-label" class="bg-amber-200 text-amber-900 px-1.5 py-0.5 rounded text-[9px]">圈數制</span>
+                        <span id="goal-mode-label" class="bg-chch-orange text-white font-black px-2 py-0.5 rounded-full text-[10px] md:text-xs shadow-sm">圈數制</span>
                     </div>
-                    <div class="flex flex-col space-y-0.5 text-slate-800 text-[10px] md:text-xs font-bold">
-                        <div class="flex justify-between items-center">
-                            <span class="text-slate-500">當前模式：</span>
-                            <span id="goal-mode-text" class="text-chch-darkGreen font-black">跑圈比賽</span>
+                    
+                    <div class="flex flex-col space-y-1.5 text-slate-800 font-extrabold">
+                        <!-- 第一列：勝負目標 -->
+                        <div class="bg-white/80 p-1.5 rounded-xl border border-amber-200/80 shadow-inner flex flex-col">
+                            <span class="text-[10px] md:text-[11px] text-slate-500 font-bold">🚩 獲勝條件</span>
+                            <span id="goal-target-text" class="text-xs md:text-sm font-black text-chch-darkGreen tracking-wide">
+                                率先完成 1 圈
+                            </span>
                         </div>
-                        <div class="flex justify-between items-center">
-                            <span class="text-slate-500">獲勝條件：</span>
-                            <span id="goal-target-text" class="text-chch-orange font-black">率先完成 1 圈</span>
+                        
+                        <!-- 第二列：結算方式 -->
+                        <div class="bg-white/80 p-1.5 rounded-xl border border-amber-200/80 shadow-inner flex flex-col">
+                            <span class="text-[10px] md:text-[11px] text-slate-500 font-bold">🏆 結算方式</span>
+                            <span id="goal-rule-text" class="text-xs md:text-sm font-black text-chch-orange tracking-wide">
+                                比所有人身上的總積分
+                            </span>
                         </div>
                     </div>
                 </div>
@@ -830,19 +838,19 @@
                 return;
             }
 
-            // 更新「遊戲目標」獨立面板的顯示文字
+            // 更新「🎯 遊戲目標」面板顯示（字體加大，分列明確）
             const goalModeLabel = document.getElementById('goal-mode-label');
-            const goalModeText = document.getElementById('goal-mode-text');
             const goalTargetText = document.getElementById('goal-target-text');
+            const goalRuleText = document.getElementById('goal-rule-text');
 
             if (roundMode === 'score') {
-                goalModeLabel.innerText = "分數制";
-                goalModeText.innerText = "決賽累積積分";
-                goalTargetText.innerText = `率先達到 ${targetScore} 分`;
+                goalModeLabel.innerText = "分數制 (決賽)";
+                goalTargetText.innerText = `第一個達成 ${targetScore} 分`;
+                goalRuleText.innerText = "直接獲得第一名優勝！";
             } else {
-                goalModeLabel.innerText = "圈數制";
-                goalModeText.innerText = "初賽跑圈比賽";
-                goalTargetText.innerText = `率先完成 ${roundMode} 圈`;
+                goalModeLabel.innerText = "圈數制 (初賽)";
+                goalTargetText.innerText = `第一個完成 ${roundMode} 圈`;
+                goalRuleText.innerText = "比身上總積分決定勝負";
             }
 
             const bgm = document.getElementById('bgm');
@@ -1591,12 +1599,15 @@
             }, 4000);
         }
 
+        // 核心邏輯：勝負判斷條件
         function checkGameEndConditions() {
             let isEnd = false;
 
             if (roundMode === 'score') {
+                // 分數制：有人達到或超過目標分數即結束
                 if (players.some(p => p.score >= targetScore)) isEnd = true;
             } else {
+                // 圈數制：第一個完成指定圈數即結束，並比身上的總積分
                 const maxLapsNeeded = parseInt(roundMode, 10);
                 if (players.some(p => p.laps >= maxLapsNeeded)) isEnd = true;
             }
@@ -1615,6 +1626,7 @@
 
             fadeMusicVolumeOut();
 
+            // 結算排名：一律按照身上的「分數 (score)」高低由大到小排序
             const allSorted = [...players].sort((a,b) => b.score - a.score);
 
             for (let i = 0; i < 4; i++) {
