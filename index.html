@@ -78,7 +78,7 @@
             box-shadow: 0 2px 4px rgba(217, 119, 6, 0.2);
         }
 
-        /* 調整 4：號碼球被撞擊放大再大一倍並停住 1 秒動畫 */
+        /* 號碼球被撞擊放大再大一倍並停住 1 秒動畫 */
         @keyframes ball-hit-freeze {
             0% { transform: scale(1); filter: drop-shadow(0 0 0px transparent); }
             30% { transform: scale(2.8); filter: drop-shadow(0 0 25px rgba(245, 158, 11, 1)); }
@@ -128,7 +128,7 @@
             animation: score-continuous-vibrate 0.3s infinite;
         }
 
-        /* 調整 2：交換位置時頭像放大縮小閃爍歷時 3 秒 (z-index: 100) */
+        /* 交換位置時頭像放大縮小閃爍歷時 3 秒 (z-index: 100) */
         @keyframes exchange-pulse-3sec {
             0% { transform: scale(1); filter: drop-shadow(0 0 0px transparent); }
             16.6% { transform: scale(2.5); filter: drop-shadow(0 0 20px #f59e0b); }
@@ -326,6 +326,24 @@
                     <div id="players-dashboard" class="flex flex-col space-y-2 overflow-y-auto flex-grow pr-1"></div>
                 </div>
 
+                <!-- 【新增需求】音樂播放器上方的「遊戲目標」獨立外框 -->
+                <div id="game-goal-box" class="mt-2 p-2 bg-chch-lightOrange rounded-xl border-2 border-amber-300 shadow-sm flex-shrink-0">
+                    <div class="text-[11px] md:text-xs font-black text-chch-orange border-b border-amber-300/60 pb-1 mb-1 flex items-center justify-between">
+                        <span>🎯 遊戲目標</span>
+                        <span id="goal-mode-label" class="bg-amber-200 text-amber-900 px-1.5 py-0.5 rounded text-[9px]">圈數制</span>
+                    </div>
+                    <div class="flex flex-col space-y-0.5 text-slate-800 text-[10px] md:text-xs font-bold">
+                        <div class="flex justify-between items-center">
+                            <span class="text-slate-500">當前模式：</span>
+                            <span id="goal-mode-text" class="text-chch-darkGreen font-black">跑圈比賽</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-slate-500">獲勝條件：</span>
+                            <span id="goal-target-text" class="text-chch-orange font-black">率先完成 1 圈</span>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- 排行榜下方音樂控制面板 -->
                 <div class="mt-2 pt-2 border-t-2 border-chch-green/20 flex-shrink-0 bg-chch-lightGreen rounded-xl p-2 border border-chch-green/30">
                     <div class="flex items-center justify-between mb-1">
@@ -349,7 +367,7 @@
                 <!-- 中央 6x2 區域 -->
                 <div id="center-board-area" class="col-start-2 col-span-6 row-start-2 row-span-2 bg-white/95 rounded-2xl border-4 border-chch-green shadow-xl relative overflow-hidden flex justify-between p-2 z-10">
                     
-                    <!-- 調整 3：提示 overlay 一併顯示參賽者圖像與名稱 -->
+                    <!-- 提示 overlay 一併顯示參賽者圖像與名稱 -->
                     <div id="ready-prompt-overlay" class="hidden absolute inset-0 bg-amber-400/95 backdrop-blur-md z-40 flex flex-col items-center justify-center p-4 text-center">
                         <span id="ready-player-avatar" class="text-7xl md:text-8xl mb-2 animate-bounce drop-shadow-lg">🦌</span>
                         <div id="ready-player-text" class="text-3xl md:text-5xl font-black text-amber-950 tracking-wider drop-shadow">
@@ -364,7 +382,7 @@
                         <div id="player-info-container" class="flex items-center justify-center w-full h-full gap-4 px-2">
                             <!-- 左邊：名稱與分數 -->
                             <div class="flex flex-col items-end justify-center space-y-2 truncate">
-                                <span class="text-[10px] md:text-xs font-black text-chch-darkGreen bg-white px-2.5 py-0.5 rounded-full border border-chch-green/30 shadow-sm">當前回合</span>
+                                <span class="text-[10px] md:text-xs font-black text-chch-darkGreen bg-white px-2.5 py-0.5 rounded-full border border-chch-green/30 shadow-sm">當開啟回合</span>
                                 <div id="current-player-name" class="text-xl md:text-2xl font-black text-slate-800 tracking-wider truncate max-w-[150px] md:max-w-[200px] text-right">參賽者</div>
                                 <div id="current-player-score-badge" class="bg-chch-orange/15 border-2 border-chch-orange/50 text-chch-orange px-3 py-0.5 rounded-full font-black text-lg md:text-2xl shadow-sm">
                                     0 分
@@ -572,7 +590,6 @@
             return audioCtx;
         }
 
-        // 調整 5：參賽者走格子移動音效 (Pop Sound)
         function playStepMoveSound() {
             try {
                 const ctx = getAudioContext();
@@ -813,6 +830,21 @@
                 return;
             }
 
+            // 更新「遊戲目標」獨立面板的顯示文字
+            const goalModeLabel = document.getElementById('goal-mode-label');
+            const goalModeText = document.getElementById('goal-mode-text');
+            const goalTargetText = document.getElementById('goal-target-text');
+
+            if (roundMode === 'score') {
+                goalModeLabel.innerText = "分數制";
+                goalModeText.innerText = "決賽累積積分";
+                goalTargetText.innerText = `率先達到 ${targetScore} 分`;
+            } else {
+                goalModeLabel.innerText = "圈數制";
+                goalModeText.innerText = "初賽跑圈比賽";
+                goalTargetText.innerText = `率先完成 ${roundMode} 圈`;
+            }
+
             const bgm = document.getElementById('bgm');
             if (bgm) {
                 bgm.volume = 0.3;
@@ -973,7 +1005,6 @@
         let ballPhysicsAnimFrame = null;
         let speedBoostTimer = null;
 
-        // 調整 3：提示層與碰撞骰球一併顯示專屬頭像，手機震動提醒
         function nextTurn() {
             if (!isGameRunning) return;
 
@@ -994,13 +1025,11 @@
             document.getElementById('current-player-name').innerText = p.name;
             document.getElementById('current-player-score-badge').innerText = `${p.score} 分`;
 
-            // 設定「請準備」層的頭像與名稱
             const readyOverlay = document.getElementById('ready-prompt-overlay');
             document.getElementById('ready-player-avatar').innerText = p.avatar;
             document.getElementById('ready-player-text').innerText = `${p.name} 請準備`;
             readyOverlay.classList.remove('hidden');
 
-            // 廣播給手機並觸發震動提醒
             players.forEach(player => {
                 if (player.conn) {
                     player.conn.send({ 
@@ -1034,7 +1063,7 @@
             oldBalls.forEach(b => b.remove());
 
             const playerBall = document.getElementById('active-player-ball');
-            playerBall.innerText = p.avatar; // 顯示參賽者專屬頭像
+            playerBall.innerText = p.avatar;
 
             playerBallPos = { x: container.clientWidth / 2 - 24, y: container.clientHeight / 2 - 24 };
             playerBall.style.left = `${playerBallPos.x}px`;
@@ -1098,7 +1127,6 @@
             ballPhysicsAnimFrame = requestAnimationFrame(runBallPhysicsLoop);
         }
 
-        // 調整 4：撞擊小球時，被撞擊的小球放大再大一倍並停住 1 秒
         function handlePlayerMoveData(playerId, deltaX, deltaY) {
             const p = players[currentTurnIndex];
             if (!activeCollisionListener || !p || p.id !== playerId) return;
@@ -1122,7 +1150,6 @@
                     if (ballPhysicsAnimFrame) cancelAnimationFrame(ballPhysicsAnimFrame);
                     if (speedBoostTimer) clearInterval(speedBoostTimer);
 
-                    // 套用特大號縮放與停住 1 秒特效
                     tb.el.classList.add('animate-ball-freeze-explode');
                     playScoreExplodeSound();
 
@@ -1136,7 +1163,6 @@
                         colors: ['#f59e0b', '#ef4444', '#10b981', '#ffffff']
                     });
 
-                    // 停住 1 秒（1000ms）後啟動移動步數
                     setTimeout(() => {
                         handleDiceMove(p.id, tb.num);
                     }, 1000);
@@ -1201,7 +1227,6 @@
                         const alertEl = document.getElementById('mobile-move-alert');
                         if (data.isYourTurn) {
                             alertEl.classList.remove('hidden');
-                            // 調整 3：輪到參賽者時手機振動提醒
                             try {
                                 if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
                             } catch(e){}
@@ -1310,7 +1335,6 @@
             }
         }
 
-        // 調整 1 & 5：第一圈踩中起點加 30 分，角色移動時播放 Step 音效
         function handleDiceMove(playerId, number) {
             const p = players.find(player => player.id === playerId);
             if (!p) return;
@@ -1321,7 +1345,6 @@
                 p.tileIndex = (p.tileIndex + 1) % 20;
                 stepCount++;
 
-                // 調整 5：每移動一格播放步進音效
                 playStepMoveSound();
 
                 if (p.tileIndex === 0) {
@@ -1333,7 +1356,6 @@
                 if (stepCount >= number) {
                     clearInterval(moveInterval);
                     
-                    // 調整 1：第一圈開始只要剛好踩中起點(0號格)就加 30 分
                     if (p.tileIndex === 0) {
                         p.score += 30;
                     }
@@ -1375,7 +1397,6 @@
                         targetPlayer = [...players].sort((a, b) => b.laps - a.laps)[1];
                     }
                     
-                    // 調整 2：觸發閃爍 3 秒，結束後才彈出通知，不會被遮罩覆蓋
                     triggerExchangeFlashAnimation(p.id, targetPlayer.id, () => {
                         const tempTile = p.tileIndex;
                         p.tileIndex = targetPlayer.tileIndex;
@@ -1390,7 +1411,6 @@
                         targetPlayer = [...players].sort((a, b) => a.laps - b.laps)[1];
                     }
 
-                    // 調整 2：觸發閃爍 3 秒，結束後才彈出通知，不會被遮罩覆蓋
                     triggerExchangeFlashAnimation(p.id, targetPlayer.id, () => {
                         const tempTile = p.tileIndex;
                         p.tileIndex = targetPlayer.tileIndex;
@@ -1463,7 +1483,6 @@
             }
         }
 
-        // 調整 2：雙方頭像放大縮小閃爍 3 秒且不被遮罩遮擋
         function triggerExchangeFlashAnimation(p1Id, p2Id, callback) {
             const avatar1 = document.getElementById(`player-tile-avatar-${p1Id}`);
             const avatar2 = document.getElementById(`player-tile-avatar-${p2Id}`);
